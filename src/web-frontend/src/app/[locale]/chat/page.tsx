@@ -1,14 +1,14 @@
-import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
 import { TwoTierChat } from '@/components/chat/TwoTierChat';
 
-export default function ChatPage({
-  params: { locale }
+export default async function ChatPage({
+  params
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const t = useTranslations();
+  const { locale } = await params;
+  const t = await getTranslations();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -36,10 +36,11 @@ export default function ChatPage({
 }
 
 export async function generateMetadata({
-  params: { locale }
+  params
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params;
   const t = await getTranslations({ locale });
 
   return {

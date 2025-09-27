@@ -1,14 +1,14 @@
-import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import Link from 'next/link';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
 
-export default function HomePage({
-  params: { locale }
+export default async function HomePage({
+  params
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
-  const t = useTranslations();
+  const { locale } = await params;
+  const t = await getTranslations();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -78,10 +78,11 @@ export default function HomePage({
 }
 
 export async function generateMetadata({
-  params: { locale }
+  params
 }: {
-  params: { locale: string }
+  params: Promise<{ locale: string }>
 }) {
+  const { locale } = await params;
   const t = await getTranslations({ locale });
 
   return {
