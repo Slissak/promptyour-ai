@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import fonts for different languages */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;500;600;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-white text-gray-900;
+  }
+
+  /* RTL support */
+  [dir="rtl"] {
+    direction: rtl;
+  }
+
+  [dir="ltr"] {
+    direction: ltr;
+  }
+
+  /* Language-specific font families */
+  .font-arabic {
+    font-family: 'Noto Sans Arabic', system-ui, sans-serif;
+  }
+
+  .font-hebrew {
+    font-family: 'Noto Sans Hebrew', system-ui, sans-serif;
+  }
+
+  .font-english {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Chat bubble animations */
+  .message-appear {
+    animation: messageAppear 0.3s ease-out;
+  }
+
+  @keyframes messageAppear {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Debug comparison layout */
+  .debug-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .debug-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* RTL-aware text alignment */
+  .text-start {
+    text-align: start;
+  }
+
+  .text-end {
+    text-align: end;
+  }
+}
+
+@layer components {
+  /* Chat message bubbles */
+  .message-bubble {
+    @apply rounded-lg px-4 py-2 max-w-[80%] break-words;
+  }
+
+  .message-user {
+    @apply bg-blue-500 text-white ml-auto;
+  }
+
+  .message-assistant {
+    @apply bg-gray-100 text-gray-900 mr-auto;
+  }
+
+  /* Theme selector */
+  .theme-selector {
+    @apply flex flex-wrap gap-2 mb-4;
+  }
+
+  .theme-button {
+    @apply px-3 py-2 rounded-md text-sm font-medium transition-colors;
+    @apply hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+
+  .theme-button-active {
+    @apply bg-blue-500 text-white;
+  }
+
+  /* Debug panels */
+  .debug-panel {
+    @apply border rounded-lg p-4 bg-white shadow-sm;
+  }
+
+  .debug-enhanced {
+    @apply border-green-200 bg-green-50;
+  }
+
+  .debug-raw {
+    @apply border-yellow-200 bg-yellow-50;
+  }
+}

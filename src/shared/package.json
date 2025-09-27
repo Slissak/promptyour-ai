@@ -1,0 +1,31 @@
+{
+  "name": "@promptyour-ai/shared",
+  "version": "1.0.0",
+  "description": "Shared API client and utilities for PromptYour.AI frontends",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "api",
+    "client",
+    "shared",
+    "typescript"
+  ],
+  "author": "PromptYour.AI",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "axios": "^1.12.2"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "type": "commonjs"
+}

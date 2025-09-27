@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "send": "Send",
+    "clear": "Clear",
+    "new_chat": "New Chat",
+    "debug_mode": "Debug Mode",
+    "language": "Language"
+  },
+  "nav": {
+    "home": "Home",
+    "chat": "Chat",
+    "about": "About",
+    "settings": "Settings"
+  },
+  "chat": {
+    "title": "PromptYour.AI Chat",
+    "subtitle": "Enhanced AI responses through intelligent model routing",
+    "placeholder": "Type your message...",
+    "choose_theme": "Choose a theme:",
+    "choose_audience": "Choose your audience:",
+    "quick_answer": "Quick Answer",
+    "enhanced_answer": "Enhanced Answer",
+    "get_enhanced": "Get Enhanced Response",
+    "want_enhanced": "Would you like a more detailed, tailored response?",
+    "themes": {
+      "academic_help": "Academic Help",
+      "creative_writing": "Creative Writing",
+      "coding_programming": "Coding & Programming",
+      "business_professional": "Business & Professional",
+      "personal_learning": "Personal Learning",
+      "research_analysis": "Research & Analysis",
+      "problem_solving": "Problem Solving",
+      "tutoring_education": "Tutoring & Education",
+      "general_questions": "General Questions"
+    },
+    "audiences": {
+      "small_kids": "Small Kids (5-10)",
+      "teenagers": "Teenagers (11-17)",
+      "adults": "Adults (18-65)",
+      "university_level": "University Level",
+      "professionals": "Professionals",
+      "seniors": "Seniors (65+)"
+    }
+  },
+  "debug": {
+    "title": "Debug Mode: Enhanced vs Raw Comparison",
+    "model_selection": "Smart Model Selection",
+    "why_model": "Why This Model?",
+    "performance_metrics": "Performance Metrics",
+    "cost": "Cost",
+    "response_time": "Response Time",
+    "system_prompts": "System Prompts Used",
+    "enhanced_response": "Enhanced Response (Our System)",
+    "raw_response": "Raw Model Response (No System Prompt)",
+    "comparison_table": "Response Comparison using {model}",
+    "tokens_used": "Tokens Used",
+    "analysis": "Quick Analysis",
+    "note": "Note: Both models received the same conversation history. The enhanced response uses our intelligent system prompting.",
+    "final_answer": "The enhanced response (shown above) will be used as the final answer."
+  }
+}

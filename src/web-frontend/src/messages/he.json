@@ -1,0 +1,59 @@
+{
+  "common": {
+    "loading": "טוען...",
+    "error": "אירעה שגיאה",
+    "send": "שלח",
+    "clear": "נקה",
+    "new_chat": "שיחה חדשה",
+    "debug_mode": "מצב דיבאג",
+    "language": "שפה"
+  },
+  "nav": {
+    "home": "בית",
+    "chat": "צ'אט",
+    "about": "אודות",
+    "settings": "הגדרות"
+  },
+  "chat": {
+    "title": "צ'אט PromptYour.AI",
+    "subtitle": "תגובות AI משופרות באמצעות ניתוב חכם של מודלים",
+    "placeholder": "הקלד את הודעתך...",
+    "choose_theme": "בחר נושא:",
+    "choose_audience": "בחר את הקהל שלך:",
+    "themes": {
+      "academic_help": "עזרה אקדמית",
+      "creative_writing": "כתיבה יצירתית",
+      "coding_programming": "תכנות ופיתוח",
+      "business_professional": "עסקים ומקצועות",
+      "personal_learning": "למידה אישית",
+      "research_analysis": "מחקר וניתוח",
+      "problem_solving": "פתרון בעיות",
+      "tutoring_education": "הוראה וחינוך",
+      "general_questions": "שאלות כלליות"
+    },
+    "audiences": {
+      "small_kids": "ילדים קטנים (5-10)",
+      "teenagers": "נוער (11-17)",
+      "adults": "מבוגרים (18-65)",
+      "university_level": "רמת אוניברסיטה",
+      "professionals": "מקצועיים",
+      "seniors": "קשישים (65+)"
+    }
+  },
+  "debug": {
+    "title": "מצב דיבאג: השוואה משופרת מול גולמי",
+    "model_selection": "בחירת מודל חכמה",
+    "why_model": "למה המודל הזה?",
+    "performance_metrics": "מדדי ביצועים",
+    "cost": "עלות",
+    "response_time": "זמן תגובה",
+    "system_prompts": "הנחיות מערכת בשימוש",
+    "enhanced_response": "תגובה משופרת (המערכת שלנו)",
+    "raw_response": "תגובת מודל גולמי (ללא הנחיית מערכת)",
+    "comparison_table": "השוואת תגובות באמצעות {model}",
+    "tokens_used": "טוקנים בשימוש",
+    "analysis": "ניתוח מהיר",
+    "note": "הערה: שני המודלים קיבלו את אותו היסטוריית שיחה. התגובה המשופרת משתמשת במערכת ההנחיה החכמה שלנו.",
+    "final_answer": "התגובה המשופרת (המוצגת למעלה) תשמש כתשובה הסופית."
+  }
+}

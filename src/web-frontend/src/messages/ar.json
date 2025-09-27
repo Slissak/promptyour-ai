@@ -1,0 +1,59 @@
+{
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "send": "إرسال",
+    "clear": "مسح",
+    "new_chat": "محادثة جديدة",
+    "debug_mode": "وضع التصحيح",
+    "language": "اللغة"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "chat": "المحادثة",
+    "about": "حول",
+    "settings": "الإعدادات"
+  },
+  "chat": {
+    "title": "دردشة PromptYour.AI",
+    "subtitle": "استجابات الذكاء الاصطناعي المحسّنة من خلال التوجيه الذكي للنماذج",
+    "placeholder": "اكتب رسالتك...",
+    "choose_theme": "اختر موضوعاً:",
+    "choose_audience": "اختر جمهورك:",
+    "themes": {
+      "academic_help": "مساعدة أكاديمية",
+      "creative_writing": "الكتابة الإبداعية",
+      "coding_programming": "البرمجة والتطوير",
+      "business_professional": "الأعمال والمهن",
+      "personal_learning": "التعلم الشخصي",
+      "research_analysis": "البحث والتحليل",
+      "problem_solving": "حل المشاكل",
+      "tutoring_education": "التدريس والتعليم",
+      "general_questions": "أسئلة عامة"
+    },
+    "audiences": {
+      "small_kids": "أطفال صغار (5-10)",
+      "teenagers": "مراهقون (11-17)",
+      "adults": "بالغون (18-65)",
+      "university_level": "مستوى جامعي",
+      "professionals": "محترفون",
+      "seniors": "كبار السن (65+)"
+    }
+  },
+  "debug": {
+    "title": "وضع التصحيح: مقارنة محسّنة مقابل خام",
+    "model_selection": "اختيار النموذج الذكي",
+    "why_model": "لماذا هذا النموذج؟",
+    "performance_metrics": "مقاييس الأداء",
+    "cost": "التكلفة",
+    "response_time": "وقت الاستجابة",
+    "system_prompts": "التوجيهات المستخدمة",
+    "enhanced_response": "الاستجابة المحسّنة (نظامنا)",
+    "raw_response": "استجابة النموذج الخام (بدون توجيه)",
+    "comparison_table": "مقارنة الاستجابة باستخدام {model}",
+    "tokens_used": "الرموز المستخدمة",
+    "analysis": "تحليل سريع",
+    "note": "ملاحظة: كلا النموذجين تلقيا نفس سجل المحادثة. الاستجابة المحسّنة تستخدم نظام التوجيه الذكي الخاص بنا.",
+    "final_answer": "سيتم استخدام الاستجابة المحسّنة (الموضحة أعلاه) كإجابة نهائية."
+  }
+}

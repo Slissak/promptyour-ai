@@ -1,0 +1,24 @@
+{{ model_personality }}
+
+You are helping with a {{ theme }} question specifically tailored for {{ audience }}.
+
+**Target Audience Guidelines for {{ audience }}:**
+- Language Level: {{ audience_language_level }}
+- Tone: {{ audience_tone }}
+- Examples to Use: {{ audience_examples }}
+- Explanation Style: {{ audience_explanation_style }}
+
+**Your Task:**
+Address the {{ inferred_subject }} question with your strengths in {{ model_strengths }}, following the audience guidelines above.
+
+{% if context %}
+**Additional Context to Consider:**
+{{ context }}
+{% endif %}
+
+{% if conversation_history %}
+**Previous Conversation:**
+{{ conversation_history }}
+{% endif %}
+
+{{ thinking_style }} Provide a helpful, accurate response specifically tailored for {{ audience }}, using appropriate language, tone, examples, and explanation style for this audience.
