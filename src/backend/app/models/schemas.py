@@ -23,11 +23,19 @@ class ThemeType(str, Enum):
 class AudienceType(str, Enum):
     """Target audience for response tailoring"""
     SMALL_KIDS = "small_kids"           # Ages 5-10
-    TEENAGERS = "teenagers"             # Ages 11-17  
+    TEENAGERS = "teenagers"             # Ages 11-17
     ADULTS = "adults"                   # Ages 18-65
     UNIVERSITY_LEVEL = "university_level"  # College/University
     PROFESSIONALS = "professionals"     # Industry experts
     SENIORS = "seniors"                 # Ages 65+
+
+
+class ResponseStyle(str, Enum):
+    """Response style preferences for output formatting and length"""
+    PARAGRAPH_BRIEF = "paragraph_brief"           # One big paragraph (shorter output)
+    STRUCTURED_DETAILED = "structured_detailed"   # Divided into points (more detailed, longer output)
+    INSTRUCTIONS_ONLY = "instructions_only"       # Only instructions without background (shorter answer)
+    COMPREHENSIVE = "comprehensive"               # With background and explanations (long and comprehensive)
 
 
 class MessageRole(str, Enum):
@@ -59,6 +67,7 @@ class UserInput(BaseModel):
     question: str = Field(..., description="The user's main question or request", min_length=1)
     theme: ThemeType = Field(..., description="Selected theme from dropdown")
     audience: AudienceType = Field(AudienceType.ADULTS, description="Target audience for response")
+    response_style: ResponseStyle = Field(ResponseStyle.STRUCTURED_DETAILED, description="Response style preference for output formatting and length")
     context: Optional[str] = Field(None, description="Additional context sentences provided by user")
     conversation_id: Optional[str] = Field(None, description="Conversation ID for history")
     message_history: Optional[List[ChatMessage]] = Field(default_factory=list, description="Previous messages in conversation")
@@ -72,6 +81,7 @@ class ProcessedContext(BaseModel):
     question: str
     theme: ThemeType
     audience: AudienceType
+    response_style: ResponseStyle
     context: Optional[str]
     conversation_id: Optional[str]
     

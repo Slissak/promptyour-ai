@@ -4,7 +4,7 @@ Processes user question + theme + context into enriched context for model select
 """
 import re
 from typing import Dict, List, Tuple, Optional
-from app.models.schemas import UserInput, ProcessedContext, ThemeType, AudienceType
+from app.models.schemas import UserInput, ProcessedContext, ThemeType, AudienceType, ResponseStyle
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -165,6 +165,7 @@ class UserInputProcessor:
             question=user_input.question,
             theme=user_input.theme,
             audience=user_input.audience,
+            response_style=user_input.response_style,
             context=user_input.context,
             conversation_id=user_input.conversation_id,
             inferred_subject=inferred_subject,

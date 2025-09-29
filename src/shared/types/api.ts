@@ -25,6 +25,13 @@ export enum AudienceType {
   SENIORS = "seniors"                  // Ages 65+
 }
 
+export enum ResponseStyle {
+  PARAGRAPH_BRIEF = "paragraph_brief",           // One big paragraph (shorter output)
+  STRUCTURED_DETAILED = "structured_detailed",   // Divided into points (more detailed, longer output)
+  INSTRUCTIONS_ONLY = "instructions_only",       // Only instructions without background (shorter answer)
+  COMPREHENSIVE = "comprehensive"               // With background and explanations (long and comprehensive)
+}
+
 export enum MessageRole {
   USER = "user",
   ASSISTANT = "assistant"
@@ -60,6 +67,7 @@ export interface UserInput {
   question: string;
   theme: ThemeType;
   audience: AudienceType;
+  response_style: ResponseStyle;
   context?: string;
   conversation_id?: string;
   message_history?: ChatMessage[];

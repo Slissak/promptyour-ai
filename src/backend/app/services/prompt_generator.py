@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
 
-from app.models.schemas import ProcessedContext, ThemeType, AudienceType
+from app.models.schemas import ProcessedContext, ThemeType, AudienceType, ResponseStyle
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -245,7 +245,53 @@ class ModelSpecificPromptGenerator:
                 "seniors": "a respectful knowledge companion who values both facts and experience"
             }
         }
-        
+
+        # Professional role specializations for deeper expertise
+        self.professional_roles = {
+            "medical": {
+                "expertise": "clinical knowledge, patient care, medical ethics, evidence-based practice",
+                "terminology": "use precise medical terminology when appropriate",
+                "ethics": "prioritize patient safety, confidentiality, and evidence-based recommendations",
+                "approach": "systematic diagnostic thinking, differential diagnosis consideration"
+            },
+            "legal": {
+                "expertise": "legal principles, case law, statutory interpretation, legal procedures",
+                "terminology": "use accurate legal terminology and cite relevant precedents",
+                "ethics": "emphasize legal compliance, professional responsibility, and ethical practice",
+                "approach": "analytical reasoning, precedent analysis, risk assessment"
+            },
+            "engineering": {
+                "expertise": "technical design, safety standards, optimization, problem-solving methodologies",
+                "terminology": "use precise technical language and engineering principles",
+                "ethics": "prioritize safety, sustainability, and professional engineering standards",
+                "approach": "systematic design thinking, constraint analysis, iterative improvement"
+            },
+            "scientific": {
+                "expertise": "research methodology, data analysis, peer review, scientific rigor",
+                "terminology": "use accurate scientific terminology and cite relevant research",
+                "ethics": "emphasize evidence-based conclusions, uncertainty acknowledgment, peer review",
+                "approach": "hypothesis formation, experimental design, statistical analysis"
+            },
+            "educational": {
+                "expertise": "learning theory, curriculum design, assessment, differentiated instruction",
+                "terminology": "use pedagogical language and educational best practices",
+                "ethics": "prioritize student welfare, inclusive education, professional development",
+                "approach": "scaffolded learning, formative assessment, growth mindset"
+            },
+            "business": {
+                "expertise": "strategic planning, market analysis, financial modeling, organizational behavior",
+                "terminology": "use business terminology and frameworks appropriately",
+                "ethics": "emphasize stakeholder value, sustainable practices, ethical leadership",
+                "approach": "data-driven decision making, risk-reward analysis, strategic thinking"
+            },
+            "creative": {
+                "expertise": "artistic principles, creative process, audience engagement, cultural context",
+                "terminology": "use creative and artistic terminology appropriately",
+                "ethics": "respect intellectual property, cultural sensitivity, authentic expression",
+                "approach": "iterative creative process, audience consideration, aesthetic principles"
+            }
+        }
+
         # Get specific persona or fallback to general
         persona_desc = theme_experts.get(theme, {}).get(audience.value, 
                       f"an expert in {theme.value} who specializes in helping {audience.value}")
@@ -306,6 +352,164 @@ class ModelSpecificPromptGenerator:
         
         return psychology_profiles.get(audience.value, psychology_profiles["adults"])
 
+    def _get_formatting_instructions(self, question_analysis: Dict[str, str], audience: AudienceType, response_style: ResponseStyle) -> str:
+        """Generate specific formatting instructions based on question type, audience, and response style"""
+
+        formatting_instructions = []
+
+        # Response style specific formatting - Primary override
+        if response_style == ResponseStyle.PARAGRAPH_BRIEF:
+            formatting_instructions.append("Format your response as ONE concise paragraph that covers all key points")
+            formatting_instructions.append("Avoid bullet points, lists, or multiple sections - keep it flowing and brief")
+            formatting_instructions.append("Prioritize the most essential information only")
+        elif response_style == ResponseStyle.STRUCTURED_DETAILED:
+            formatting_instructions.append("Structure your response with clear headings, bullet points, and organized sections")
+            formatting_instructions.append("Provide comprehensive details with examples and thorough explanations")
+            formatting_instructions.append("Use numbered lists, bullet points, and clear visual organization")
+        elif response_style == ResponseStyle.INSTRUCTIONS_ONLY:
+            formatting_instructions.append("Provide ONLY direct instructions or answers without background explanation")
+            formatting_instructions.append("Skip context, theory, or 'why' explanations - focus purely on 'what' and 'how'")
+            formatting_instructions.append("Be concise and action-oriented without elaboration")
+        elif response_style == ResponseStyle.COMPREHENSIVE:
+            formatting_instructions.append("Provide comprehensive coverage with background context, detailed explanations, and reasoning")
+            formatting_instructions.append("Include examples, alternatives, edge cases, and thorough analysis")
+            formatting_instructions.append("Explain the 'why' behind information and provide complete understanding")
+
+        # Question-type specific formatting (secondary layer)
+        if question_analysis["type"] == "how_to" and response_style != ResponseStyle.PARAGRAPH_BRIEF:
+            formatting_instructions.append("Use numbered steps or bullet points for clarity")
+            if response_style == ResponseStyle.COMPREHENSIVE:
+                formatting_instructions.append("Include detailed explanations for each step and potential pitfalls")
+        elif question_analysis["type"] == "comparison" and response_style in [ResponseStyle.STRUCTURED_DETAILED, ResponseStyle.COMPREHENSIVE]:
+            formatting_instructions.append("Use comparison tables or side-by-side analysis when helpful")
+            formatting_instructions.append("Clearly highlight key differences and similarities")
+        elif question_analysis["type"] == "problem_solving" and response_style != ResponseStyle.INSTRUCTIONS_ONLY:
+            formatting_instructions.append("Structure response as: Problem → Analysis → Solutions → Implementation")
+
+        # Audience-specific formatting preferences (tertiary layer)
+        if audience in [AudienceType.SMALL_KIDS, AudienceType.TEENAGERS] and response_style != ResponseStyle.INSTRUCTIONS_ONLY:
+            formatting_instructions.append("Use visual breaks and engaging formatting")
+            if response_style == ResponseStyle.PARAGRAPH_BRIEF:
+                formatting_instructions.append("Keep the paragraph simple and engaging")
+        elif audience == AudienceType.UNIVERSITY_LEVEL and response_style == ResponseStyle.COMPREHENSIVE:
+            formatting_instructions.append("Use academic formatting with clear citations and references")
+            formatting_instructions.append("Include detailed explanations with supporting evidence")
+        elif audience == AudienceType.PROFESSIONALS and response_style != ResponseStyle.PARAGRAPH_BRIEF:
+            formatting_instructions.append("Prioritize actionable insights and key takeaways")
+
+        return " ".join(formatting_instructions)
+
+    def _get_reasoning_pattern(self, question_analysis: Dict[str, str], theme: ThemeType) -> str:
+        """Generate reasoning pattern instructions for enhanced cognitive approaches"""
+
+        reasoning_instructions = []
+
+        # Question-type specific reasoning patterns
+        if question_analysis["type"] == "problem_solving":
+            reasoning_instructions.append("Think through this step-by-step: identify the problem, analyze root causes, generate solutions, evaluate options")
+        elif question_analysis["type"] == "reasoning":
+            reasoning_instructions.append("Use logical reasoning: present the premise, explain the logic, draw conclusions, consider alternative perspectives")
+        elif question_analysis["type"] == "comparison":
+            reasoning_instructions.append("Analyze systematically: identify criteria for comparison, evaluate each option against criteria, synthesize findings")
+        elif question_analysis["type"] == "explanation":
+            reasoning_instructions.append("Build understanding progressively: start with fundamentals, add complexity gradually, connect to existing knowledge")
+
+        # Theme-specific reasoning enhancements
+        if theme == ThemeType.ACADEMIC_HELP:
+            reasoning_instructions.append("Encourage critical thinking and help the learner discover insights rather than just providing answers")
+        elif theme == ThemeType.CODING_PROGRAMMING:
+            reasoning_instructions.append("Think algorithmically: break down the problem, consider edge cases, optimize for readability and performance")
+        elif theme == ThemeType.RESEARCH_ANALYSIS:
+            reasoning_instructions.append("Apply research methodology: consider sources, evaluate evidence quality, acknowledge limitations")
+
+        return " ".join(reasoning_instructions)
+
+    def _get_quality_safeguards(self, theme: ThemeType, audience: AudienceType) -> str:
+        """Generate quality safeguards and verification instructions"""
+
+        safeguard_instructions = []
+
+        # Universal safeguards
+        safeguard_instructions.append("Verify accuracy: double-check facts and ensure information is current and correct")
+        safeguard_instructions.append("Acknowledge uncertainty: be clear about what you're confident about vs. what might need further verification")
+        safeguard_instructions.append("Consider bias: reflect on potential biases in your response and present balanced perspectives")
+
+        # Theme-specific safeguards
+        if theme in [ThemeType.ACADEMIC_HELP, ThemeType.TUTORING_EDUCATION]:
+            safeguard_instructions.append("Focus on learning: guide understanding rather than just providing answers")
+        elif theme == ThemeType.CODING_PROGRAMMING:
+            safeguard_instructions.append("Emphasize best practices: include security considerations, code maintainability, and testing approaches")
+        elif theme == ThemeType.BUSINESS_PROFESSIONAL:
+            safeguard_instructions.append("Consider stakeholder impact: address ethical implications and multiple perspectives")
+
+        # Audience-specific safeguards
+        if audience == AudienceType.SMALL_KIDS:
+            safeguard_instructions.append("Ensure age-appropriateness: avoid complex or potentially concerning content")
+        elif audience == AudienceType.PROFESSIONALS:
+            safeguard_instructions.append("Emphasize professional responsibility: include relevant compliance and ethical considerations")
+
+        return " ".join(safeguard_instructions)
+
+    def _get_meta_cognitive_instructions(self, question_analysis: Dict[str, str]) -> str:
+        """Generate meta-cognitive and self-reflection instructions"""
+
+        meta_instructions = [
+            "Self-assess your response: ensure it fully addresses the question and meets the audience's needs",
+            "Check completeness: verify you've covered all important aspects of the topic",
+            "Evaluate clarity: ensure your explanation is clear and appropriate for the target audience"
+        ]
+
+        # Question-specific meta-cognitive enhancements
+        if question_analysis["type"] == "how_to":
+            meta_instructions.append("Verify practicality: ensure your steps are actionable and realistic")
+        elif question_analysis["type"] == "explanation":
+            meta_instructions.append("Check understanding: consider if a novice would understand your explanation")
+        elif question_analysis["type"] == "problem_solving":
+            meta_instructions.append("Validate solutions: ensure your recommendations are feasible and effective")
+
+        return " ".join(meta_instructions)
+
+    def _detect_professional_domain(self, question: str, theme: ThemeType) -> Optional[str]:
+        """Detect if the question relates to a specific professional domain"""
+        question_lower = question.lower()
+
+        # Medical domain indicators
+        medical_keywords = ["medical", "health", "patient", "diagnosis", "treatment", "symptom", "clinical", "healthcare"]
+        if any(keyword in question_lower for keyword in medical_keywords):
+            return "medical"
+
+        # Legal domain indicators
+        legal_keywords = ["legal", "law", "court", "contract", "rights", "liability", "compliance", "regulation"]
+        if any(keyword in question_lower for keyword in legal_keywords):
+            return "legal"
+
+        # Engineering domain indicators
+        engineering_keywords = ["engineer", "design", "technical", "system", "architecture", "optimization", "performance"]
+        if any(keyword in question_lower for keyword in engineering_keywords):
+            return "engineering"
+
+        # Scientific domain indicators
+        scientific_keywords = ["research", "study", "experiment", "hypothesis", "data", "analysis", "scientific"]
+        if any(keyword in question_lower for keyword in scientific_keywords) or theme == ThemeType.RESEARCH_ANALYSIS:
+            return "scientific"
+
+        # Educational domain indicators
+        educational_keywords = ["teach", "learn", "student", "curriculum", "education", "pedagogy"]
+        if any(keyword in question_lower for keyword in educational_keywords) or theme in [ThemeType.ACADEMIC_HELP, ThemeType.TUTORING_EDUCATION]:
+            return "educational"
+
+        # Business domain indicators
+        business_keywords = ["business", "strategy", "market", "profit", "company", "management", "finance"]
+        if any(keyword in question_lower for keyword in business_keywords) or theme == ThemeType.BUSINESS_PROFESSIONAL:
+            return "business"
+
+        # Creative domain indicators
+        creative_keywords = ["creative", "art", "design", "write", "story", "artistic", "aesthetic"]
+        if any(keyword in question_lower for keyword in creative_keywords) or theme == ThemeType.CREATIVE_WRITING:
+            return "creative"
+
+        return None
+
     def _generate_response_instructions(self, question: str, theme: ThemeType, audience: AudienceType, 
                                       question_analysis: Dict[str, str]) -> str:
         """Generate specific instructions for how to answer THIS question for THIS audience"""
@@ -345,45 +549,80 @@ class ModelSpecificPromptGenerator:
     def _build_intelligent_prompt(self, model: str, context: ProcessedContext, expert_persona: Dict[str, str],
                                  audience_psychology: Dict[str, str], response_instructions: str,
                                  question_analysis: Dict[str, str], conversation_history: Optional[str]) -> str:
-        """Build the final intelligent prompt that combines all elements"""
-        
+        """Build the final intelligent prompt that combines all elements with advanced prompt engineering"""
+
         # Get model personality
         model_config = self.model_prompts.get(model, self.model_prompts["claude-3-sonnet"])
-        
+
+        # Detect professional domain for specialized instructions
+        professional_domain = self._detect_professional_domain(context.question, context.theme)
+
+        # Get advanced instruction components
+        formatting_instructions = self._get_formatting_instructions(question_analysis, context.audience, context.response_style)
+        reasoning_pattern = self._get_reasoning_pattern(question_analysis, context.theme)
+        quality_safeguards = self._get_quality_safeguards(context.theme, context.audience)
+        meta_cognitive_instructions = self._get_meta_cognitive_instructions(question_analysis)
+
         prompt_parts = [
-            # Model personality and expert role
+            # Enhanced model personality and expert role
             f"{model_config['base_personality']}\n",
             f"{expert_persona['role']}.\n",
-            f"{expert_persona['expertise']}. {expert_persona['approach']}.\n",
-            
-            # Question analysis and approach  
-            f"You will receive a {question_analysis['type']} question. {question_analysis['approach']}.\n",
-            
-            # Audience psychology
-            f"Your audience ({context.audience.value.replace('_', ' ')}) has these characteristics:",
-            f"- {audience_psychology['attention_span']}",
-            f"- {audience_psychology['learning_style']}", 
-            f"- {audience_psychology['motivation']}",
-            f"- {audience_psychology['examples']}\n",
-            
-            # Specific response instructions
-            f"Response Instructions: {response_instructions}\n"
+            f"{expert_persona['expertise']}. {expert_persona['approach']}.\n"
         ]
-        
+
+        # Add professional domain expertise if detected
+        if professional_domain and professional_domain in self.professional_roles:
+            domain_info = self.professional_roles[professional_domain]
+            prompt_parts.extend([
+                f"\n**Professional Domain Expertise ({professional_domain.title()}):**",
+                f"- Expertise areas: {domain_info['expertise']}",
+                f"- Communication: {domain_info['terminology']}",
+                f"- Professional ethics: {domain_info['ethics']}",
+                f"- Approach: {domain_info['approach']}\n"
+            ])
+
+        prompt_parts.extend([
+            # Enhanced question analysis and approach
+            f"**Question Analysis:** You will receive a {question_analysis['type']} question. {question_analysis['approach']}.\n",
+
+            # Enhanced audience psychology
+            f"**Audience Profile ({context.audience.value.replace('_', ' ')}):**",
+            f"- Attention & Focus: {audience_psychology['attention_span']}",
+            f"- Learning Style: {audience_psychology['learning_style']}",
+            f"- Motivation: {audience_psychology['motivation']}",
+            f"- Effective Examples: {audience_psychology['examples']}\n",
+
+            # Advanced response framework
+            f"**Response Framework:**",
+            f"- Content Instructions: {response_instructions}",
+            f"- Response Style: {context.response_style.value.replace('_', ' ').title()} - {formatting_instructions}",
+            f"- Reasoning Approach: {reasoning_pattern}\n",
+
+            # Quality assurance framework
+            f"**Quality Assurance:**",
+            f"- Verification: {quality_safeguards}",
+            f"- Self-Assessment: {meta_cognitive_instructions}\n"
+        ])
+
         # Add context if provided
         if context.context:
-            prompt_parts.append(f"Additional Context: {context.context}\n")
-            
+            prompt_parts.append(f"**Additional Context:** {context.context}\n")
+
         # Add conversation history if exists
         if conversation_history:
-            prompt_parts.append(f"Previous Conversation:\n{conversation_history}\n")
-            
-        # Final instruction
-        prompt_parts.append(
-            f"Now provide a helpful, accurate response that perfectly matches the {context.audience.value.replace('_', ' ')} "
-            f"audience's needs, using their preferred communication style and examples they can relate to."
-        )
-        
+            prompt_parts.append(f"**Previous Conversation:**\n{conversation_history}\n")
+
+        # Enhanced final instructions with chain-of-thought prompting
+        prompt_parts.extend([
+            f"**Final Instructions:**",
+            f"Before responding, take a moment to:",
+            f"1. Understand exactly what the {context.audience.value.replace('_', ' ')} audience needs",
+            f"2. Consider the most effective way to explain this topic for their level",
+            f"3. Choose examples and analogies they can relate to",
+            f"4. Structure your response for maximum clarity and engagement",
+            f"\nNow provide a comprehensive, accurate, and perfectly tailored response that addresses their question while following all the guidance above."
+        ])
+
         return "\n".join(prompt_parts)
 
     def _get_builtin_template(self) -> str:
