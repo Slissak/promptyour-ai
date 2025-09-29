@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pathlib import Path
 
-from app.models.schemas import ProcessedContext, ThemeType, AudienceType
+from app.models.schemas import ProcessedContext, ThemeType, AudienceType, ResponseStyle
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -352,34 +352,49 @@ class ModelSpecificPromptGenerator:
         
         return psychology_profiles.get(audience.value, psychology_profiles["adults"])
 
-    def _get_formatting_instructions(self, question_analysis: Dict[str, str], audience: AudienceType) -> str:
-        """Generate specific formatting instructions based on question type and audience"""
+    def _get_formatting_instructions(self, question_analysis: Dict[str, str], audience: AudienceType, response_style: ResponseStyle) -> str:
+        """Generate specific formatting instructions based on question type, audience, and response style"""
 
         formatting_instructions = []
 
-        # Question-type specific formatting
-        if question_analysis["type"] == "how_to":
+        # Response style specific formatting - Primary override
+        if response_style == ResponseStyle.PARAGRAPH_BRIEF:
+            formatting_instructions.append("Format your response as ONE concise paragraph that covers all key points")
+            formatting_instructions.append("Avoid bullet points, lists, or multiple sections - keep it flowing and brief")
+            formatting_instructions.append("Prioritize the most essential information only")
+        elif response_style == ResponseStyle.STRUCTURED_DETAILED:
+            formatting_instructions.append("Structure your response with clear headings, bullet points, and organized sections")
+            formatting_instructions.append("Provide comprehensive details with examples and thorough explanations")
+            formatting_instructions.append("Use numbered lists, bullet points, and clear visual organization")
+        elif response_style == ResponseStyle.INSTRUCTIONS_ONLY:
+            formatting_instructions.append("Provide ONLY direct instructions or answers without background explanation")
+            formatting_instructions.append("Skip context, theory, or 'why' explanations - focus purely on 'what' and 'how'")
+            formatting_instructions.append("Be concise and action-oriented without elaboration")
+        elif response_style == ResponseStyle.COMPREHENSIVE:
+            formatting_instructions.append("Provide comprehensive coverage with background context, detailed explanations, and reasoning")
+            formatting_instructions.append("Include examples, alternatives, edge cases, and thorough analysis")
+            formatting_instructions.append("Explain the 'why' behind information and provide complete understanding")
+
+        # Question-type specific formatting (secondary layer)
+        if question_analysis["type"] == "how_to" and response_style != ResponseStyle.PARAGRAPH_BRIEF:
             formatting_instructions.append("Use numbered steps or bullet points for clarity")
-            formatting_instructions.append("Include clear action items and checkpoints")
-        elif question_analysis["type"] == "comparison":
+            if response_style == ResponseStyle.COMPREHENSIVE:
+                formatting_instructions.append("Include detailed explanations for each step and potential pitfalls")
+        elif question_analysis["type"] == "comparison" and response_style in [ResponseStyle.STRUCTURED_DETAILED, ResponseStyle.COMPREHENSIVE]:
             formatting_instructions.append("Use comparison tables or side-by-side analysis when helpful")
             formatting_instructions.append("Clearly highlight key differences and similarities")
-        elif question_analysis["type"] == "explanation":
-            formatting_instructions.append("Use clear headings and subheadings to organize information")
-            formatting_instructions.append("Include examples and analogies to illustrate concepts")
-        elif question_analysis["type"] == "problem_solving":
+        elif question_analysis["type"] == "problem_solving" and response_style != ResponseStyle.INSTRUCTIONS_ONLY:
             formatting_instructions.append("Structure response as: Problem → Analysis → Solutions → Implementation")
-            formatting_instructions.append("Use bullet points for multiple solutions or approaches")
 
-        # Audience-specific formatting preferences
-        if audience in [AudienceType.SMALL_KIDS, AudienceType.TEENAGERS]:
-            formatting_instructions.append("Use visual breaks, emojis, and engaging formatting")
-            formatting_instructions.append("Keep paragraphs short and digestible")
-        elif audience == AudienceType.UNIVERSITY_LEVEL:
+        # Audience-specific formatting preferences (tertiary layer)
+        if audience in [AudienceType.SMALL_KIDS, AudienceType.TEENAGERS] and response_style != ResponseStyle.INSTRUCTIONS_ONLY:
+            formatting_instructions.append("Use visual breaks and engaging formatting")
+            if response_style == ResponseStyle.PARAGRAPH_BRIEF:
+                formatting_instructions.append("Keep the paragraph simple and engaging")
+        elif audience == AudienceType.UNIVERSITY_LEVEL and response_style == ResponseStyle.COMPREHENSIVE:
             formatting_instructions.append("Use academic formatting with clear citations and references")
             formatting_instructions.append("Include detailed explanations with supporting evidence")
-        elif audience == AudienceType.PROFESSIONALS:
-            formatting_instructions.append("Use executive summary format when appropriate")
+        elif audience == AudienceType.PROFESSIONALS and response_style != ResponseStyle.PARAGRAPH_BRIEF:
             formatting_instructions.append("Prioritize actionable insights and key takeaways")
 
         return " ".join(formatting_instructions)
@@ -543,7 +558,7 @@ class ModelSpecificPromptGenerator:
         professional_domain = self._detect_professional_domain(context.question, context.theme)
 
         # Get advanced instruction components
-        formatting_instructions = self._get_formatting_instructions(question_analysis, context.audience)
+        formatting_instructions = self._get_formatting_instructions(question_analysis, context.audience, context.response_style)
         reasoning_pattern = self._get_reasoning_pattern(question_analysis, context.theme)
         quality_safeguards = self._get_quality_safeguards(context.theme, context.audience)
         meta_cognitive_instructions = self._get_meta_cognitive_instructions(question_analysis)
@@ -580,7 +595,7 @@ class ModelSpecificPromptGenerator:
             # Advanced response framework
             f"**Response Framework:**",
             f"- Content Instructions: {response_instructions}",
-            f"- Formatting Guidelines: {formatting_instructions}",
+            f"- Response Style: {context.response_style.value.replace('_', ' ').title()} - {formatting_instructions}",
             f"- Reasoning Approach: {reasoning_pattern}\n",
 
             # Quality assurance framework

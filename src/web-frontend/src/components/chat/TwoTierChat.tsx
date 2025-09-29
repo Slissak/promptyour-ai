@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { PromptYourAIClient } from '@shared/api/client';
 import { getConversationManager } from '@shared/utils/conversation';
-import type { QuickInput, QuickResponse, UserInput, ChatResponse, ChatMessage, ThemeType, AudienceType } from '@shared/types/api';
+import type { QuickInput, QuickResponse, UserInput, ChatResponse, ChatMessage, ThemeType, AudienceType, ResponseStyle } from '@shared/types/api';
 import { MessageRole } from '@shared/types/api';
 import { ChatMessageDisplay } from './ChatMessageDisplay';
 import { EnhancedOptionsModal } from './EnhancedOptionsModal';
@@ -115,7 +115,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setShowEnhancedModal(true);
   };
 
-  const handleEnhancedSubmit = async (theme: string, audience: string) => {
+  const handleEnhancedSubmit = async (theme: string, audience: string, responseStyle: string) => {
     if (!clientRef.current || !currentQuestion) return;
 
     const conversationId = conversationManagerRef.current.getActiveConversation()?.metadata.id;
@@ -130,6 +130,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
         question: currentQuestion,
         theme: theme as ThemeType,
         audience: audience as AudienceType,
+        response_style: responseStyle as ResponseStyle,
         conversation_id: conversationId,
         message_history: conversationManagerRef.current.getMessageHistory(conversationId)
       };
