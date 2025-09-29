@@ -21,6 +21,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   const [showEnhancedModal, setShowEnhancedModal] = useState(false);
   const [currentQuickResponse, setCurrentQuickResponse] = useState<QuickResponse | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState('');
+  const [hasEnhancedResponse, setHasEnhancedResponse] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const clientRef = useRef<PromptYourAIClient | null>(null);
@@ -47,6 +48,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setCurrentQuestion(question);
     setInput('');
     setIsLoading(true);
+    setHasEnhancedResponse(false); // Reset for new question
 
     // Create conversation if none exists
     let conversationId = conversationManagerRef.current.getActiveConversation()?.metadata.id;
@@ -152,17 +154,9 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
         }
       };
 
-      setMessages(prev => {
-        // Replace the last assistant message (quick response) with enhanced response
-        const newMessages = [...prev];
-        for (let i = newMessages.length - 1; i >= 0; i--) {
-          if (newMessages[i].role === MessageRole.ASSISTANT) {
-            newMessages[i] = enhancedMessage;
-            break;
-          }
-        }
-        return newMessages;
-      });
+      // Add enhanced response as a new message (keep both quick and enhanced)
+      setMessages(prev => [...prev, enhancedMessage]);
+      setHasEnhancedResponse(true); // Mark that enhanced response was generated
 
       // Update conversation history with enhanced response
       conversationManagerRef.current.addEnhancedResponse(conversationId, enhancedResponse);
@@ -179,6 +173,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setMessages([]);
     setCurrentQuickResponse(null);
     setCurrentQuestion('');
+    setHasEnhancedResponse(false);
     const newConversationId = conversationManagerRef.current.createConversation();
     conversationManagerRef.current.setActiveConversation(newConversationId);
   };
@@ -200,7 +195,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
                 key={message.id}
                 message={message}
                 onRequestEnhanced={
-                  message.metadata?.type === 'quick' && currentQuickResponse
+                  message.metadata?.type === 'quick' && currentQuickResponse && !hasEnhancedResponse
                     ? handleRequestEnhanced
                     : undefined
                 }
