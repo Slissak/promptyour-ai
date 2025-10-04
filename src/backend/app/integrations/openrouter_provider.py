@@ -56,6 +56,18 @@ class OpenRouterProvider:
         start_time = time.time()
         
         try:
+            # Build messages array - only include system message if not empty
+            messages = []
+            if request.system_prompt and request.system_prompt.strip():
+                messages.append({
+                    "role": "system",
+                    "content": request.system_prompt
+                })
+            messages.append({
+                "role": "user",
+                "content": request.user_message
+            })
+
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
@@ -67,16 +79,7 @@ class OpenRouterProvider:
                     },
                     json={
                         "model": openrouter_model,
-                        "messages": [
-                            {
-                                "role": "system", 
-                                "content": request.system_prompt
-                            },
-                            {
-                                "role": "user", 
-                                "content": request.user_message
-                            }
-                        ],
+                        "messages": messages,
                         "max_tokens": request.max_tokens,
                         "temperature": request.temperature,
                         "stream": False
