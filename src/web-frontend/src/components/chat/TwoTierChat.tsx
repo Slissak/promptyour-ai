@@ -8,6 +8,7 @@ import type { QuickInput, QuickResponse, UserInput, ChatResponse, ChatMessage, T
 import { MessageRole } from '@shared/types/api';
 import { ChatMessageDisplay } from './ChatMessageDisplay';
 import { EnhancedOptionsModal } from './EnhancedOptionsModal';
+import { ComparisonView } from './ComparisonView';
 
 interface TwoTierChatProps {
   locale: string;
@@ -140,24 +141,33 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
 
       const enhancedResponse = await clientRef.current.sendEnhancedMessage(enhancedInput);
 
-      // Replace the quick response with enhanced response
-      const enhancedMessage: ChatMessage = {
+      // Create comparison message that replaces the quick response
+      const comparisonMessage: ChatMessage = {
         id: (Date.now() + 2).toString(),
         role: MessageRole.ASSISTANT,
-        content: enhancedResponse.content,
+        content: 'Comparison View', // Placeholder, actual content rendered by ComparisonView
         timestamp: new Date().toISOString(),
         metadata: {
-          type: 'enhanced',
-          model: enhancedResponse.model_used,
-          provider: enhancedResponse.provider,
+          type: 'comparison',
           theme,
           audience,
-          system_prompt: enhancedResponse.system_prompt
+          quickResponse: currentQuickResponse!,
+          enhancedResponse: enhancedResponse
         }
       };
 
-      // Add enhanced response as a new message (keep both quick and enhanced)
-      setMessages(prev => [...prev, enhancedMessage]);
+      // Replace the quick response message with comparison message
+      setMessages(prev => {
+        const newMessages = [...prev];
+        // Find and replace the last quick response message
+        for (let i = newMessages.length - 1; i >= 0; i--) {
+          if (newMessages[i].metadata?.type === 'quick') {
+            newMessages[i] = comparisonMessage;
+            break;
+          }
+        }
+        return newMessages;
+      });
       setHasEnhancedResponse(true); // Mark that enhanced response was generated
 
       // Update conversation history with enhanced response
@@ -192,17 +202,43 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
           </div>
         ) : (
           <>
-            {messages.map((message) => (
-              <ChatMessageDisplay
-                key={message.id}
-                message={message}
-                onRequestEnhanced={
-                  message.metadata?.type === 'quick' && currentQuickResponse && !hasEnhancedResponse
-                    ? handleRequestEnhanced
-                    : undefined
-                }
-              />
-            ))}
+            {messages.map((message) => {
+              // Render comparison view for comparison messages
+              if (message.metadata?.type === 'comparison' && message.metadata.quickResponse && message.metadata.enhancedResponse) {
+                return (
+                  <ComparisonView
+                    key={message.id}
+                    quickResponse={{
+                      content: message.metadata.quickResponse.content,
+                      model: message.metadata.quickResponse.model_used,
+                      provider: message.metadata.quickResponse.provider,
+                      systemPrompt: message.metadata.quickResponse.system_prompt
+                    }}
+                    enhancedResponse={{
+                      content: message.metadata.enhancedResponse.content,
+                      model: message.metadata.enhancedResponse.model_used,
+                      provider: message.metadata.enhancedResponse.provider,
+                      systemPrompt: message.metadata.enhancedResponse.system_prompt,
+                      theme: message.metadata.theme,
+                      audience: message.metadata.audience
+                    }}
+                  />
+                );
+              }
+
+              // Render regular message display for other message types
+              return (
+                <ChatMessageDisplay
+                  key={message.id}
+                  message={message}
+                  onRequestEnhanced={
+                    message.metadata?.type === 'quick' && currentQuickResponse && !hasEnhancedResponse
+                      ? handleRequestEnhanced
+                      : undefined
+                  }
+                />
+              );
+            })}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-lg p-3 max-w-xs animate-pulse">

@@ -46,12 +46,15 @@ export interface ChatMessage {
   model?: string;
   provider?: string;
   metadata?: {
-    type?: 'quick' | 'enhanced' | 'error';
+    type?: 'quick' | 'enhanced' | 'error' | 'comparison';
     model?: string;
     provider?: string;
     theme?: string;
     audience?: string;
     system_prompt?: string;
+    // For comparison type
+    quickResponse?: QuickResponse;
+    enhancedResponse?: ChatResponse;
   };
 }
 
