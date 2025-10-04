@@ -141,6 +141,14 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
 
       const enhancedResponse = await clientRef.current.sendEnhancedMessage(enhancedInput);
 
+      // Debug: Log the enhanced response to check raw_response
+      console.log('Enhanced Response received:', {
+        hasRawResponse: !!enhancedResponse.raw_response,
+        rawResponseLength: enhancedResponse.raw_response?.length || 0,
+        rawResponsePreview: enhancedResponse.raw_response?.substring(0, 100) || 'EMPTY',
+        enhancedContentLength: enhancedResponse.content?.length || 0
+      });
+
       // Create comparison message that replaces the quick response
       // Note: We use raw_response from enhancedResponse for the left side (RAW), not the quick response
       const comparisonMessage: ChatMessage = {

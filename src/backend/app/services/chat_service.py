@@ -165,7 +165,9 @@ class ChatService:
                 request_id=request_id,
                 model=raw_llm_response.model,
                 tokens_used=raw_llm_response.tokens_used,
-                cost=raw_llm_response.cost
+                cost=raw_llm_response.cost,
+                content_length=len(raw_llm_response.content),
+                content_preview=raw_llm_response.content[:200] if raw_llm_response.content else "EMPTY"
             )
 
             if debug_mode and debug_callback and connection_id:
@@ -204,6 +206,14 @@ class ChatService:
             )
             
             # Step 6: Return response to user
+            logger.info(
+                "Creating ChatResponse",
+                request_id=request_id,
+                enhanced_content_length=len(llm_response.content),
+                raw_content_length=len(raw_llm_response.content),
+                raw_response_preview=raw_llm_response.content[:100] if raw_llm_response.content else "EMPTY"
+            )
+
             chat_response = ChatResponse(
                 content=llm_response.content,
                 model_used=llm_response.model,

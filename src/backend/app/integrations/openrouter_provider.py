@@ -68,6 +68,14 @@ class OpenRouterProvider:
                 "content": request.user_message
             })
 
+            logger.info(
+                "OpenRouter API request details",
+                model=openrouter_model,
+                message_count=len(messages),
+                has_system_prompt=bool(request.system_prompt and request.system_prompt.strip()),
+                user_message_length=len(request.user_message)
+            )
+
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
@@ -102,17 +110,25 @@ class OpenRouterProvider:
         try:
             content = data["choices"][0]["message"]["content"]
             usage = data.get("usage", {})
-            
+
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             total_tokens = usage.get("total_tokens", prompt_tokens + completion_tokens)
-            
+
+            logger.info(
+                "OpenRouter response parsed",
+                model=openrouter_model,
+                content_length=len(content) if content else 0,
+                content_preview=content[:100] if content else "EMPTY",
+                tokens=total_tokens
+            )
+
             # Calculate cost
             cost = self._calculate_cost(openrouter_model, prompt_tokens, completion_tokens)
-            
+
             # Generate message ID
             message_id = self._generate_message_id()
-            
+
             llm_response = LLMResponse(
                 content=content,
                 model=request.model,
