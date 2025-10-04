@@ -99,6 +99,7 @@ export interface ChatResponse {
   response_time_ms: number;
   reasoning: string;
   system_prompt: string;
+  raw_response?: string;  // RAW model response (no system prompt, no history) for comparison
 }
 
 // Provider Status Types

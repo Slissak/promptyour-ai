@@ -147,34 +147,29 @@ class ChatService:
 
             # Debug Mode: Get basic response for comparison
             basic_response = None
+            # Step 4.5: Generate RAW response for comparison (NO system prompt, NO history - just the question)
+            logger.info("Generating RAW response for comparison", request_id=request_id)
+
+            raw_llm_request = LLMRequest(
+                model=model_choice.model,
+                system_prompt="",  # Completely empty - no system prompt at all
+                user_message=user_input.question,  # ONLY the raw question, no history
+                max_tokens=4000,
+                temperature=0.7
+            )
+
+            raw_llm_response = await self.llm_provider.call_model(raw_llm_request)
+
+            logger.info(
+                "RAW LLM response received",
+                request_id=request_id,
+                model=raw_llm_response.model,
+                tokens_used=raw_llm_response.tokens_used,
+                cost=raw_llm_response.cost
+            )
+
             if debug_mode and debug_callback and connection_id:
-                logger.info("Debug mode: Generating basic response for comparison", request_id=request_id)
-
-                # Create basic LLM request with conversation history but NO system prompt
-                # This ensures fair comparison - same context, but no enhanced prompting
-                basic_user_message = user_input.question
-                if conversation_history_str:
-                    basic_user_message = f"{conversation_history_str}\n\nHuman: {user_input.question}"
-
-                basic_llm_request = LLMRequest(
-                    model=model_choice.model,
-                    system_prompt="",  # No system prompt - raw model response
-                    user_message=basic_user_message,
-                    max_tokens=4000,
-                    temperature=0.7
-                )
-
-                basic_llm_response = await self.llm_provider.call_model(basic_llm_request)
-
-                logger.info(
-                    "Basic LLM response received for comparison",
-                    request_id=request_id,
-                    model=basic_llm_response.model,
-                    tokens_used=basic_llm_response.tokens_used,
-                    actual_cost=basic_llm_response.cost
-                )
-
-                # Send comparison data
+                # Send comparison data for debugging
                 comparison_data = {
                     "enhanced_response": {
                         "content": llm_response.content,
@@ -182,15 +177,15 @@ class ChatService:
                         "cost": llm_response.cost,
                         "response_time_ms": llm_response.response_time_ms,
                         "system_prompt": system_prompt,
-                        "reasoning": model_choice.reasoning  # Include model selection reasoning
+                        "reasoning": model_choice.reasoning
                     },
-                    "basic_response": {
-                        "content": basic_llm_response.content,
-                        "tokens_used": basic_llm_response.tokens_used,
-                        "cost": basic_llm_response.cost,
-                        "response_time_ms": basic_llm_response.response_time_ms,
-                        "system_prompt": None,  # No system prompt - raw model response
-                        "user_message": basic_user_message  # Include the full message sent (with history)
+                    "raw_response": {
+                        "content": raw_llm_response.content,
+                        "tokens_used": raw_llm_response.tokens_used,
+                        "cost": raw_llm_response.cost,
+                        "response_time_ms": raw_llm_response.response_time_ms,
+                        "system_prompt": "",  # Empty - completely raw
+                        "user_message": user_input.question  # Only the question
                     },
                     "model": model_choice.model,
                     "provider": model_choice.provider,
@@ -217,7 +212,8 @@ class ChatService:
                 cost=llm_response.cost,
                 response_time_ms=llm_response.response_time_ms,
                 reasoning=model_choice.reasoning,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                raw_response=raw_llm_response.content  # Include RAW response for comparison
             )
             
             logger.info(

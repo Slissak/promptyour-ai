@@ -135,6 +135,7 @@ class ChatResponse(BaseModel):
     response_time_ms: int
     reasoning: str = Field(..., description="Why this model was chosen")
     system_prompt: str = Field(..., description="System prompt used for this response")
+    raw_response: Optional[str] = Field(None, description="RAW model response (no system prompt) for comparison")
 
 
 class QuickResponse(BaseModel):

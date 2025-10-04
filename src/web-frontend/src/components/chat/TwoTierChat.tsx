@@ -142,6 +142,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
       const enhancedResponse = await clientRef.current.sendEnhancedMessage(enhancedInput);
 
       // Create comparison message that replaces the quick response
+      // Note: We use raw_response from enhancedResponse for the left side (RAW), not the quick response
       const comparisonMessage: ChatMessage = {
         id: (Date.now() + 2).toString(),
         role: MessageRole.ASSISTANT,
@@ -151,7 +152,16 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
           type: 'comparison',
           theme,
           audience,
-          quickResponse: currentQuickResponse!,
+          // Create a pseudo QuickResponse for the RAW response
+          quickResponse: {
+            content: enhancedResponse.raw_response || '',
+            model_used: enhancedResponse.model_used,
+            provider: enhancedResponse.provider,
+            message_id: enhancedResponse.message_id + '_raw',
+            cost: 0,
+            response_time_ms: 0,
+            system_prompt: ''  // Empty - completely RAW
+          },
           enhancedResponse: enhancedResponse
         }
       };
