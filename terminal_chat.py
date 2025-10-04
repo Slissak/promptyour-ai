@@ -498,15 +498,16 @@ class TerminalChat:
     # display_debug_prompt method removed - now using display_debug_comparison for better evaluation
 
     async def display_debug_comparison(self, comparison_data: Dict[str, Any], original_input: Dict[str, Any] = None) -> None:
-        """Display enhanced vs basic response comparison in debug mode"""
+        """Display enhanced vs RAW response comparison in debug mode"""
         enhanced = comparison_data.get("enhanced_response", {})
-        basic = comparison_data.get("basic_response", {})
+        # Try both "raw_response" (new) and "basic_response" (legacy) for backwards compatibility
+        raw = comparison_data.get("raw_response", comparison_data.get("basic_response", {}))
         model = comparison_data.get("model", "unknown")
         provider = comparison_data.get("provider", "unknown")
         user_question = comparison_data.get("user_question", "")
 
         self.console.print()
-        self.console.print("[bold cyan]🔬 DEBUG MODE: Enhanced vs Basic Response Comparison[/bold cyan]")
+        self.console.print("[bold cyan]🔬 DEBUG MODE: Enhanced vs RAW Response Comparison[/bold cyan]")
         self.console.print()
 
         # Show user question
@@ -586,24 +587,24 @@ class TerminalChat:
         comparison_table.add_row(
             "Tokens Used",
             str(enhanced.get("tokens_used", 0)),
-            str(basic.get("tokens_used", 0))
+            str(raw.get("tokens_used", 0))
         )
         comparison_table.add_row(
             "Cost",
             f"${enhanced.get('cost', 0):.6f}",
-            f"${basic.get('cost', 0):.6f}"
+            f"${raw.get('cost', 0):.6f}"
         )
         comparison_table.add_row(
             "Response Time",
             f"{enhanced.get('response_time_ms', 0)}ms",
-            f"{basic.get('response_time_ms', 0)}ms"
+            f"{raw.get('response_time_ms', 0)}ms"
         )
 
         self.console.print(comparison_table)
 
         # Show prompts used (full prompts, no truncation)
         enhanced_prompt = enhanced.get("system_prompt", "")
-        basic_prompt = basic.get("system_prompt", None)
+        raw_prompt = raw.get("system_prompt", None)
 
         prompts_table = Table(
             title="🎯 System Prompts Used",
@@ -614,17 +615,17 @@ class TerminalChat:
         prompts_table.add_column("Raw Model Input (No System Prompt)", style="yellow", width=50)
 
         # Handle no system prompt case but show user message if available
-        if basic_prompt is None:
-            basic_user_msg = basic.get("user_message", "")
-            if basic_user_msg and len(basic_user_msg) > 100:
-                basic_msg_preview = basic_user_msg[:100] + "..."
+        if raw_prompt is None or raw_prompt == "":
+            raw_user_msg = raw.get("user_message", "")
+            if raw_user_msg and len(raw_user_msg) > 100:
+                raw_msg_preview = raw_user_msg[:100] + "..."
             else:
-                basic_msg_preview = basic_user_msg or "[dim italic]NO SYSTEM PROMPT - Raw user message with conversation history[/dim italic]"
-            basic_prompt_display = f"[dim italic]NO SYSTEM PROMPT[/dim italic]\n\nUser message sent:\n{basic_msg_preview}"
+                raw_msg_preview = raw_user_msg or "[dim italic]NO SYSTEM PROMPT - Only raw user question[/dim italic]"
+            raw_prompt_display = f"[dim italic]NO SYSTEM PROMPT[/dim italic]\n\nUser message sent:\n{raw_msg_preview}"
         else:
-            basic_prompt_display = basic_prompt
+            raw_prompt_display = raw_prompt
 
-        prompts_table.add_row(enhanced_prompt, basic_prompt_display)
+        prompts_table.add_row(enhanced_prompt, raw_prompt_display)
 
         self.console.print(prompts_table)
 
@@ -642,7 +643,7 @@ class TerminalChat:
         # Show raw model response after
         self.console.print()
         raw_response_panel = Panel(
-            basic.get("content", ""),
+            raw.get("content", "[dim italic]No RAW response received[/dim italic]"),
             title="🤖 Raw Model Response (No System Prompt)",
             title_align="left",
             border_style="yellow",
@@ -651,14 +652,14 @@ class TerminalChat:
         self.console.print(raw_response_panel)
 
         # Analysis summary
-        token_diff = enhanced.get("tokens_used", 0) - basic.get("tokens_used", 0)
-        cost_diff = enhanced.get("cost", 0) - basic.get("cost", 0)
+        token_diff = enhanced.get("tokens_used", 0) - raw.get("tokens_used", 0)
+        cost_diff = enhanced.get("cost", 0) - raw.get("cost", 0)
 
         analysis_text = []
         if token_diff > 0:
-            analysis_text.append(f"Enhanced used {token_diff} more tokens (+{(token_diff/basic.get('tokens_used', 1)*100):.1f}%)")
+            analysis_text.append(f"Enhanced used {token_diff} more tokens (+{(token_diff/raw.get('tokens_used', 1)*100):.1f}%)")
         elif token_diff < 0:
-            analysis_text.append(f"Enhanced used {abs(token_diff)} fewer tokens ({(abs(token_diff)/basic.get('tokens_used', 1)*100):.1f}% less)")
+            analysis_text.append(f"Enhanced used {abs(token_diff)} fewer tokens ({(abs(token_diff)/raw.get('tokens_used', 1)*100):.1f}% less)")
         else:
             analysis_text.append("Both responses used same number of tokens")
 
@@ -678,7 +679,7 @@ class TerminalChat:
         )
         self.console.print(analysis_panel)
 
-        self.console.print("[dim]💡 Note: Both models received the same conversation history. The enhanced response uses our intelligent system prompting.[/dim]")
+        self.console.print("[dim]💡 Note: RAW response receives ONLY the user's question (no system prompt, no history). Enhanced response uses intelligent system prompting.[/dim]")
         self.console.print("[dim]📋 The enhanced response (shown above) will be used as the final answer.[/dim]")
 
         # Store conversation history (same logic as display_response)
