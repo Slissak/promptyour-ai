@@ -45,6 +45,7 @@ class TerminalChat:
         self.conversation_theme = None
         self.conversation_context = None
         self.conversation_audience = None
+        self.conversation_response_style = None
         self.message_history = []
         self.chosen_model = None
         self.chosen_provider = None
@@ -70,6 +71,14 @@ class TerminalChat:
             "university_level",  # College/University students and graduates
             "professionals",     # Industry professionals and experts
             "seniors"            # Ages 65+
+        ]
+
+        # Available response styles
+        self.response_styles = [
+            "paragraph_brief",       # Concise, one paragraph response
+            "structured_detailed",   # Organized with clear sections and examples
+            "instructions_only",     # Direct actions without background
+            "comprehensive"          # Full explanation with background and reasoning
         ]
     
     def display_banner(self):
@@ -103,6 +112,7 @@ class TerminalChat:
         self.conversation_theme = None
         self.conversation_context = None
         self.conversation_audience = None
+        self.conversation_response_style = None
         self.message_history = []
         self.session_messages = []
         self.chosen_model = None
@@ -174,11 +184,12 @@ class TerminalChat:
     def get_user_input(self, question: str) -> Optional[Dict[str, Any]]:
         """Get user input with theme selection (only for first message)"""
         if self.first_message_sent:
-            # Continue conversation with existing theme/context/audience and model
+            # Continue conversation with existing theme/context/audience/response_style and model
             user_data = {
                 "question": question,
                 "theme": self.conversation_theme or "general_questions",
                 "audience": self.conversation_audience or "adults",
+                "response_style": self.conversation_response_style or "structured_detailed",
                 "context": self.conversation_context,
                 "conversation_id": self.conversation_id,
                 "message_history": self.message_history
@@ -249,11 +260,11 @@ class TerminalChat:
                     default="3",
                     console=self.console
                 )
-                
+
                 if audience_choice.strip() == "":
                     selected_audience = "adults"
                     break
-                
+
                 audience_idx = int(audience_choice) - 1
                 if 0 <= audience_idx < len(self.audiences):
                     selected_audience = self.audiences[audience_idx]
@@ -262,10 +273,43 @@ class TerminalChat:
                     self.console.print(f"❌ Invalid choice. Please select 1-{len(self.audiences)}.", style="red")
             except ValueError:
                 self.console.print("❌ Please enter a number.", style="red")
-        
+
+        # Show response style options
+        self.console.print("\n✨ [bold]Available response styles:[/bold]")
+        style_descriptions = {
+            "paragraph_brief": "Brief Paragraph - Concise, one paragraph response",
+            "structured_detailed": "Structured & Detailed - Organized with clear sections and examples",
+            "instructions_only": "Instructions Only - Direct actions without background",
+            "comprehensive": "Comprehensive - Full explanation with background and reasoning"
+        }
+        for i, style in enumerate(self.response_styles, 1):
+            self.console.print(f"  {i}. {style_descriptions[style]}")
+
+        # Get response style selection
+        while True:
+            try:
+                style_choice = Prompt.ask(
+                    f"\n✨ [bold]Choose response style[/bold] (1-{len(self.response_styles)}, or press Enter for structured & detailed)",
+                    default="2",
+                    console=self.console
+                )
+
+                if style_choice.strip() == "":
+                    selected_response_style = "structured_detailed"
+                    break
+
+                style_idx = int(style_choice) - 1
+                if 0 <= style_idx < len(self.response_styles):
+                    selected_response_style = self.response_styles[style_idx]
+                    break
+                else:
+                    self.console.print(f"❌ Invalid choice. Please select 1-{len(self.response_styles)}.", style="red")
+            except ValueError:
+                self.console.print("❌ Please enter a number.", style="red")
+
         # Get optional context
         context = Prompt.ask(
-            "📝 [dim]Additional context (optional)[/dim]", 
+            "📝 [dim]Additional context (optional)[/dim]",
             default="",
             console=self.console
         )
@@ -273,12 +317,14 @@ class TerminalChat:
         # Store for future messages
         self.conversation_theme = selected_theme
         self.conversation_audience = selected_audience
+        self.conversation_response_style = selected_response_style
         self.conversation_context = context if context.strip() else None
-        
+
         return {
             "question": question,
             "theme": selected_theme,
             "audience": selected_audience,
+            "response_style": selected_response_style,
             "context": context if context.strip() else None,
             "conversation_id": self.conversation_id,
             "message_history": self.message_history
