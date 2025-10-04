@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@shared/types/api';
@@ -11,11 +12,13 @@ interface ChatMessageDisplayProps {
 
 export function ChatMessageDisplay({ message, onRequestEnhanced }: ChatMessageDisplayProps) {
   const t = useTranslations();
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
 
   const isUser = message.role === 'user';
   const isQuick = message.metadata?.type === 'quick';
   const isEnhanced = message.metadata?.type === 'enhanced';
   const isError = message.metadata?.type === 'error';
+  const hasSystemPrompt = message.metadata?.system_prompt;
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -59,6 +62,24 @@ export function ChatMessageDisplay({ message, onRequestEnhanced }: ChatMessageDi
           <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert' : ''}`}>
             <ReactMarkdown>{message.content}</ReactMarkdown>
           </div>
+
+          {/* System Prompt Section */}
+          {!isUser && hasSystemPrompt && (
+            <div className="mt-3 border-t border-gray-200 pt-2">
+              <button
+                onClick={() => setShowSystemPrompt(!showSystemPrompt)}
+                className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                <span className={`transform transition-transform ${showSystemPrompt ? 'rotate-90' : ''}`}>▶</span>
+                <span>{showSystemPrompt ? 'Hide' : 'Show'} System Prompt</span>
+              </button>
+              {showSystemPrompt && (
+                <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono text-gray-700 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                  {message.metadata.system_prompt}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Model Info */}
           {!isUser && message.metadata?.model && (

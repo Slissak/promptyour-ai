@@ -216,7 +216,8 @@ class ChatService:
                 message_id=llm_response.message_id,
                 cost=llm_response.cost,
                 response_time_ms=llm_response.response_time_ms,
-                reasoning=model_choice.reasoning
+                reasoning=model_choice.reasoning,
+                system_prompt=system_prompt
             )
             
             logger.info(
@@ -322,7 +323,8 @@ class ChatService:
                 provider=llm_response.provider,
                 message_id=llm_response.message_id,
                 cost=llm_response.cost,
-                response_time_ms=llm_response.response_time_ms
+                response_time_ms=llm_response.response_time_ms,
+                system_prompt=system_prompt
             )
 
             logger.info(

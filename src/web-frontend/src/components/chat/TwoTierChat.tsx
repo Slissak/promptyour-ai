@@ -88,7 +88,8 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
         metadata: {
           type: 'quick',
           model: quickResponse.model_used,
-          provider: quickResponse.provider
+          provider: quickResponse.provider,
+          system_prompt: quickResponse.system_prompt
         }
       };
 
@@ -150,7 +151,8 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
           model: enhancedResponse.model_used,
           provider: enhancedResponse.provider,
           theme,
-          audience
+          audience,
+          system_prompt: enhancedResponse.system_prompt
         }
       };
 

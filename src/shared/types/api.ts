@@ -51,6 +51,7 @@ export interface ChatMessage {
     provider?: string;
     theme?: string;
     audience?: string;
+    system_prompt?: string;
   };
 }
 
@@ -83,6 +84,7 @@ export interface QuickResponse {
   message_id: string;
   cost: number;
   response_time_ms: number;
+  system_prompt: string;
 }
 
 export interface ChatResponse {
@@ -93,6 +95,7 @@ export interface ChatResponse {
   cost: number;
   response_time_ms: number;
   reasoning: string;
+  system_prompt: string;
 }
 
 // Provider Status Types

@@ -134,6 +134,7 @@ class ChatResponse(BaseModel):
     cost: float
     response_time_ms: int
     reasoning: str = Field(..., description="Why this model was chosen")
+    system_prompt: str = Field(..., description="System prompt used for this response")
 
 
 class QuickResponse(BaseModel):
@@ -144,6 +145,7 @@ class QuickResponse(BaseModel):
     message_id: str
     cost: float
     response_time_ms: int
+    system_prompt: str = Field(..., description="System prompt used for this response")
 
 
 class UserRating(BaseModel):
