@@ -153,6 +153,7 @@ class RawInput(BaseModel):
     """Input structure for RAW responses - no prompt engineering"""
     question: str = Field(..., description="The user's question - sent directly to model without any prompt engineering", min_length=1)
     conversation_id: Optional[str] = Field(None, description="Conversation ID for tracking")
+    message_history: Optional[List[ChatMessage]] = Field(default_factory=list, description="Previous messages in conversation")
     force_model: Optional[str] = Field(None, description="Force use of specific model")
     force_provider: Optional[str] = Field(None, description="Force use of specific provider")
 

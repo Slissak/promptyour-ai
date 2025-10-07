@@ -357,16 +357,17 @@ class ChatService:
         user_id: str,
         request_id: str = None
     ) -> "RawResponse":
-        """Process RAW request - NO prompt engineering, ONLY user question sent to model"""
+        """Process RAW request - NO prompt engineering, but WITH conversation history"""
 
         if request_id is None:
             request_id = str(uuid.uuid4())
 
         logger.info(
-            "Processing RAW request (no prompt engineering)",
+            "Processing RAW request (no prompt engineering, with history)",
             request_id=request_id,
             user_id=user_id,
-            question_length=len(raw_input.question)
+            question_length=len(raw_input.question),
+            history_messages=len(raw_input.message_history) if raw_input.message_history else 0
         )
 
         try:
@@ -374,13 +375,36 @@ class ChatService:
             preferred_model = raw_input.force_model or "anthropic/claude-3.5-sonnet"
             preferred_provider = raw_input.force_provider or "openrouter"
 
-            # Step 2: Call LLM with EMPTY system prompt and ONLY the question
+            # Step 2: Process conversation history (if provided)
+            conversation_history_str = ""
+            if raw_input.message_history and len(raw_input.message_history) > 0:
+                history_lines = []
+                for msg in raw_input.message_history:
+                    role = "Human" if msg.role == "user" else "Assistant"
+                    history_lines.append(f"{role}: {msg.content}")
+                conversation_history_str = "\n\n".join(history_lines)
+
+                logger.info(
+                    "Using conversation history in RAW mode",
+                    request_id=request_id,
+                    history_messages=len(raw_input.message_history),
+                    history_preview=conversation_history_str[:200] + "..." if len(conversation_history_str) > 200 else conversation_history_str
+                )
+
+            # Step 3: Build user message with history context
+            if conversation_history_str:
+                # Include history in user message since we can't use system prompt
+                user_message_with_context = f"{conversation_history_str}\n\nHuman: {raw_input.question}"
+            else:
+                user_message_with_context = raw_input.question
+
+            # Step 4: Call LLM with EMPTY system prompt but with history in user message
             from app.models.schemas import LLMRequest
 
             llm_request = LLMRequest(
                 model=preferred_model,
                 system_prompt="",  # EMPTY - no prompt engineering at all
-                user_message=raw_input.question,  # ONLY the raw question
+                user_message=user_message_with_context,  # Question with history context
                 max_tokens=4000,  # Same as enhanced for fair comparison
                 temperature=0.7   # Same as enhanced for fair comparison
             )
@@ -391,7 +415,8 @@ class ChatService:
                 model=preferred_model,
                 provider=preferred_provider,
                 system_prompt_length=0,  # Always 0 for RAW
-                user_message_length=len(raw_input.question)
+                user_message_length=len(user_message_with_context),
+                includes_history=bool(conversation_history_str)
             )
 
             llm_response = await self.llm_provider.call_model(llm_request)
