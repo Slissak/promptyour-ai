@@ -11,9 +11,10 @@ from app.models.schemas import (
     LLMRequest, UserRating, EvaluationResult
 )
 from app.services.input_processor_v2 import UserInputProcessor
-from app.services.model_selector_v2 import ThemeBasedModelSelector  
+from app.services.model_selector_v2 import ThemeBasedModelSelector
 from app.services.prompt_generator import ModelSpecificPromptGenerator
 from app.integrations.unified_llm_provider import UnifiedLLMProvider
+from app.utils.thinking_config import get_recommended_reasoning_params
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -124,14 +125,29 @@ class ChatService:
             )
             
             # Note: Debug comparison will be sent after both responses are generated
-            
-            # Step 4: Call the selected LLM
+
+            # Step 4: Get reasoning parameters for enhanced mode (WITH thinking)
+            reasoning_params = get_recommended_reasoning_params(model_choice.model, mode="enhanced")
+
+            logger.info(
+                "Enhanced mode reasoning configuration",
+                request_id=request_id,
+                model=model_choice.model,
+                enable_reasoning=reasoning_params["enable_reasoning"],
+                reasoning_effort=reasoning_params.get("reasoning_effort"),
+                reasoning_budget_tokens=reasoning_params.get("reasoning_budget_tokens")
+            )
+
+            # Step 5: Call the selected LLM with extended thinking/reasoning
             llm_request = LLMRequest(
                 model=model_choice.model,
                 system_prompt=system_prompt,
                 user_message=user_input.question,
                 max_tokens=4000,
-                temperature=0.7
+                temperature=0.7,
+                enable_reasoning=reasoning_params["enable_reasoning"],
+                reasoning_effort=reasoning_params.get("reasoning_effort"),
+                reasoning_budget_tokens=reasoning_params.get("reasoning_budget_tokens")
             )
             
             llm_response = await self.llm_provider.call_model(llm_request)
@@ -147,7 +163,7 @@ class ChatService:
 
             # Debug Mode: Get basic response for comparison
             basic_response = None
-            # Step 4.5: Generate RAW response for comparison (NO system prompt, NO history - just the question)
+            # Step 4.5: Generate RAW response for comparison (NO system prompt, NO history, NO reasoning)
             logger.info("Generating RAW response for comparison", request_id=request_id)
 
             raw_llm_request = LLMRequest(
@@ -155,7 +171,8 @@ class ChatService:
                 system_prompt="",  # Completely empty - no system prompt at all
                 user_message=user_input.question,  # ONLY the raw question, no history
                 max_tokens=4000,
-                temperature=0.7
+                temperature=0.7,
+                enable_reasoning=False  # NO thinking/reasoning in RAW mode
             )
 
             raw_llm_response = await self.llm_provider.call_model(raw_llm_request)
@@ -302,13 +319,14 @@ class ChatService:
                 prompt_length=len(system_prompt)
             )
 
-            # Step 4: Call LLM with minimal configuration
+            # Step 4: Call LLM with minimal configuration (NO reasoning for speed)
             llm_request = LLMRequest(
                 model=preferred_model,
                 system_prompt=system_prompt,
                 user_message=quick_input.question,
                 max_tokens=100,  # Keep it short
-                temperature=0.3  # Lower creativity for more direct answers
+                temperature=0.3,  # Lower creativity for more direct answers
+                enable_reasoning=False  # NO thinking/reasoning in quick mode for fast responses
             )
 
             llm_response = await self.llm_provider.call_model(llm_request)
@@ -398,7 +416,7 @@ class ChatService:
             else:
                 user_message_with_context = raw_input.question
 
-            # Step 4: Call LLM with EMPTY system prompt but with history in user message
+            # Step 4: Call LLM with EMPTY system prompt but with history in user message (NO reasoning)
             from app.models.schemas import LLMRequest
 
             llm_request = LLMRequest(
@@ -406,7 +424,8 @@ class ChatService:
                 system_prompt="",  # EMPTY - no prompt engineering at all
                 user_message=user_message_with_context,  # Question with history context
                 max_tokens=4000,  # Same as enhanced for fair comparison
-                temperature=0.7   # Same as enhanced for fair comparison
+                temperature=0.7,   # Same as enhanced for fair comparison
+                enable_reasoning=False  # NO thinking/reasoning in RAW mode
             )
 
             logger.info(

@@ -11,6 +11,7 @@ import json
 from app.models.schemas import LLMRequest, LLMResponse
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.utils.thinking_config import get_thinking_config
 
 logger = get_logger(__name__)
 
@@ -68,13 +69,36 @@ class OpenRouterProvider:
                 "content": request.user_message
             })
 
+            # Get reasoning configuration if enabled
+            reasoning_config = get_thinking_config(
+                model=request.model,
+                enable_reasoning=request.enable_reasoning,
+                reasoning_effort=request.reasoning_effort,
+                reasoning_budget_tokens=request.reasoning_budget_tokens
+            )
+
             logger.info(
                 "OpenRouter API request details",
                 model=openrouter_model,
                 message_count=len(messages),
                 has_system_prompt=bool(request.system_prompt and request.system_prompt.strip()),
-                user_message_length=len(request.user_message)
+                user_message_length=len(request.user_message),
+                reasoning_enabled=bool(reasoning_config)
             )
+
+            # Build request payload
+            payload = {
+                "model": openrouter_model,
+                "messages": messages,
+                "max_tokens": request.max_tokens,
+                "temperature": request.temperature,
+                "stream": False
+            }
+
+            # Add reasoning configuration if enabled
+            if reasoning_config:
+                payload["reasoning"] = reasoning_config
+                logger.info("Extended thinking/reasoning enabled", reasoning_config=reasoning_config)
 
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
@@ -85,13 +109,7 @@ class OpenRouterProvider:
                         "HTTP-Referer": "https://promptyour.ai",  # Required by OpenRouter
                         "X-Title": "PromptYour.AI"  # Optional but recommended
                     },
-                    json={
-                        "model": openrouter_model,
-                        "messages": messages,
-                        "max_tokens": request.max_tokens,
-                        "temperature": request.temperature,
-                        "stream": False
-                    }
+                    json=payload
                 )
                 
                 response.raise_for_status()

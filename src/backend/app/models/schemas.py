@@ -112,6 +112,9 @@ class LLMRequest(BaseModel):
     user_message: str
     max_tokens: int = 4000
     temperature: float = 0.7
+    enable_reasoning: bool = False  # Whether to enable extended thinking/reasoning
+    reasoning_effort: Optional[str] = None  # For OpenAI models: "high", "medium", "low"
+    reasoning_budget_tokens: Optional[int] = None  # For Anthropic models: token budget (min 1024)
 
 
 class LLMResponse(BaseModel):
