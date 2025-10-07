@@ -6,7 +6,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
 
-from app.models.schemas import UserInput, QuickInput, ChatResponse, QuickResponse, UserRating
+from app.models.schemas import UserInput, QuickInput, RawInput, ChatResponse, QuickResponse, RawResponse, UserRating
 from app.services.chat_service import ChatService, ChatServiceError
 from app.core.logging import get_logger
 
@@ -111,6 +111,59 @@ async def send_quick_message(
         )
     except Exception as e:
         logger.error("Unexpected error in quick chat endpoint", user_id=user_id, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@router.post("/raw", response_model=RawResponse)
+async def send_raw_message(
+    request: RawInput,
+    user_id: str = "demo_user"  # TODO: Get from authentication
+) -> RawResponse:
+    """
+    RAW chat endpoint - NO prompt engineering, ONLY user question sent to model
+
+    This endpoint demonstrates what happens when you send ONLY the user's question
+    to the model without any system prompt, context, theme, or audience adaptation.
+
+    Use this to compare against enhanced responses and see the value of prompt engineering.
+
+    Flow:
+    1. User inputs question only
+    2. Backend sends EMPTY system prompt
+    3. Model receives ONLY the question
+    4. Returns RAW model output
+    """
+
+    logger.info(
+        "RAW chat message received",
+        user_id=user_id,
+        question_length=len(request.question)
+    )
+
+    try:
+        response = await chat_service.process_raw_request(request, user_id)
+
+        logger.info(
+            "RAW chat message processed successfully",
+            user_id=user_id,
+            message_id=response.message_id,
+            model_used=response.model_used,
+            cost=response.cost
+        )
+
+        return response
+
+    except ChatServiceError as e:
+        logger.error("Chat service error in RAW mode", user_id=user_id, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"RAW chat service error: {e}"
+        )
+    except Exception as e:
+        logger.error("Unexpected error in RAW chat endpoint", user_id=user_id, error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"

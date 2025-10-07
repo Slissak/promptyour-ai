@@ -149,6 +149,25 @@ class QuickResponse(BaseModel):
     system_prompt: str = Field(..., description="System prompt used for this response")
 
 
+class RawInput(BaseModel):
+    """Input structure for RAW responses - no prompt engineering"""
+    question: str = Field(..., description="The user's question - sent directly to model without any prompt engineering", min_length=1)
+    conversation_id: Optional[str] = Field(None, description="Conversation ID for tracking")
+    force_model: Optional[str] = Field(None, description="Force use of specific model")
+    force_provider: Optional[str] = Field(None, description="Force use of specific provider")
+
+
+class RawResponse(BaseModel):
+    """RAW response from model - no system prompt, no prompt engineering"""
+    content: str = Field(..., description="RAW model output with no prompt engineering")
+    model_used: str
+    provider: str
+    message_id: str
+    cost: float
+    response_time_ms: int
+    system_prompt: str = Field(default="", description="System prompt (always empty for RAW responses)")
+
+
 class UserRating(BaseModel):
     """User's rating of a response"""
     message_id: str

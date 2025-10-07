@@ -351,6 +351,92 @@ class ChatService:
             )
             raise ChatServiceError(f"Failed to process quick request: {e}")
 
+    async def process_raw_request(
+        self,
+        raw_input: "RawInput",
+        user_id: str,
+        request_id: str = None
+    ) -> "RawResponse":
+        """Process RAW request - NO prompt engineering, ONLY user question sent to model"""
+
+        if request_id is None:
+            request_id = str(uuid.uuid4())
+
+        logger.info(
+            "Processing RAW request (no prompt engineering)",
+            request_id=request_id,
+            user_id=user_id,
+            question_length=len(raw_input.question)
+        )
+
+        try:
+            # Step 1: Select model (default to same as enhanced for fair comparison)
+            preferred_model = raw_input.force_model or "anthropic/claude-3.5-sonnet"
+            preferred_provider = raw_input.force_provider or "openrouter"
+
+            # Step 2: Call LLM with EMPTY system prompt and ONLY the question
+            from app.models.schemas import LLMRequest
+
+            llm_request = LLMRequest(
+                model=preferred_model,
+                system_prompt="",  # EMPTY - no prompt engineering at all
+                user_message=raw_input.question,  # ONLY the raw question
+                max_tokens=4000,  # Same as enhanced for fair comparison
+                temperature=0.7   # Same as enhanced for fair comparison
+            )
+
+            logger.info(
+                "Sending RAW request to LLM",
+                request_id=request_id,
+                model=preferred_model,
+                provider=preferred_provider,
+                system_prompt_length=0,  # Always 0 for RAW
+                user_message_length=len(raw_input.question)
+            )
+
+            llm_response = await self.llm_provider.call_model(llm_request)
+
+            logger.info(
+                "RAW LLM response received",
+                request_id=request_id,
+                model=llm_response.model,
+                tokens_used=llm_response.tokens_used,
+                cost=llm_response.cost,
+                response_time_ms=llm_response.response_time_ms,
+                content_length=len(llm_response.content)
+            )
+
+            # Step 3: Return RAW response
+            from app.models.schemas import RawResponse
+
+            raw_response = RawResponse(
+                content=llm_response.content,
+                model_used=llm_response.model,
+                provider=llm_response.provider,
+                message_id=llm_response.message_id,
+                cost=llm_response.cost,
+                response_time_ms=llm_response.response_time_ms,
+                system_prompt=""  # Always empty for RAW
+            )
+
+            logger.info(
+                "RAW request completed",
+                request_id=request_id,
+                message_id=raw_response.message_id,
+                final_cost=raw_response.cost
+            )
+
+            return raw_response
+
+        except Exception as e:
+            logger.error(
+                "RAW request processing failed",
+                request_id=request_id,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            raise ChatServiceError(f"Failed to process RAW request: {e}")
+
     async def collect_user_rating(
         self, 
         rating: UserRating,
