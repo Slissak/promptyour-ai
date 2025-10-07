@@ -98,7 +98,9 @@ class TerminalChat:
         self.console.print(f"👤 User ID: {self.user_id}", style="dim")
         self.console.print(f"💬 Session: {self.conversation_id}", style="dim")
         if self.debug:
-            self.console.print("🐛 Debug Mode: Enhanced vs Raw model comparison will be shown", style="yellow")
+            self.console.print("🐛 Debug Mode: Will show Quick + Enhanced + RAW comparison", style="yellow")
+        else:
+            self.console.print("💬 Normal Mode: Will show Quick + Enhanced (no RAW comparison)", style="cyan")
         if self.quick_mode:
             self.console.print("⚡ Quick Mode: Skipping theme and context questions", style="cyan")
         else:
@@ -755,43 +757,74 @@ class TerminalChat:
         self.console.print()
 
     async def display_enhanced_response(self, response_data: Dict[str, Any], user_question: str = None) -> None:
-        """Display enhanced AI response without duplicating user question in history (already added by quick response)"""
+        """Display enhanced AI response, optionally with RAW comparison in debug mode"""
         content = response_data.get("content", "")
         model_used = response_data.get("model_used", "unknown")
         provider = response_data.get("provider", "unknown")
         cost = response_data.get("cost", 0)
         response_time = response_data.get("response_time_ms", 0)
         reasoning = response_data.get("reasoning", "")
+        system_prompt = response_data.get("system_prompt", "")
+        raw_response = response_data.get("raw_response", None)
 
         # NOTE: Don't add user question to history - it's already there from quick response
 
-        # Create prominent model/provider header
-        self.console.print()
+        # If debug mode is enabled AND raw_response exists, show comparison
+        if self.debug and raw_response:
+            # Build comparison data structure similar to WebSocket debug mode
+            comparison_data = {
+                "enhanced_response": {
+                    "content": content,
+                    "tokens_used": response_data.get("tokens_used", 0),
+                    "cost": cost,
+                    "response_time_ms": response_time,
+                    "system_prompt": system_prompt,
+                    "reasoning": reasoning
+                },
+                "raw_response": {
+                    "content": raw_response,
+                    "tokens_used": 0,  # Not provided separately
+                    "cost": 0,  # Not provided separately
+                    "response_time_ms": 0,  # Not provided separately
+                    "system_prompt": "",  # Always empty for RAW
+                    "user_message": user_question or ""
+                },
+                "model": model_used,
+                "provider": provider,
+                "user_question": user_question or ""
+            }
 
-        # Determine provider style and emoji
-        provider_emoji = "🏠" if provider == "lm_studio" else "☁️" if provider == "openrouter" else "🤖"
-        provider_style = "bold blue" if provider == "lm_studio" else "bold magenta" if provider == "openrouter" else "bold cyan"
-        cost_style = "green" if cost == 0 else "yellow"
+            # Display the comparison
+            await self.display_debug_comparison(comparison_data)
+        else:
+            # Normal mode: just display the enhanced response
+            # Create prominent model/provider header
+            self.console.print()
 
-        # Create enhanced response header
-        self.console.print(f"🚀 [bold green]Enhanced Response:[/bold green] {provider_emoji} [{provider_style}]{provider.upper()}[/{provider_style}] → [bold yellow]{model_used}[/bold yellow]", style="green")
+            # Determine provider style and emoji
+            provider_emoji = "🏠" if provider == "lm_studio" else "☁️" if provider == "openrouter" else "🤖"
+            provider_style = "bold blue" if provider == "lm_studio" else "bold magenta" if provider == "openrouter" else "bold cyan"
+            cost_style = "green" if cost == 0 else "yellow"
 
-        # Display the enhanced content
-        self.console.print(Panel(
-            Markdown(content) if content.strip() else "No response content",
-            title=f"🤖 Enhanced Response (${cost:.4f} USD, {response_time}ms)",
-            title_align="left",
-            border_style="blue"
-        ))
+            # Create enhanced response header
+            self.console.print(f"🚀 [bold green]Enhanced Response:[/bold green] {provider_emoji} [{provider_style}]{provider.upper()}[/{provider_style}] → [bold yellow]{model_used}[/bold yellow]", style="green")
 
-        # Show reasoning for enhanced model selection
-        if reasoning:
+            # Display the enhanced content
             self.console.print(Panel(
-                reasoning,
-                title="🎯 Why this model was selected",
+                Markdown(content) if content.strip() else "No response content",
+                title=f"🤖 Enhanced Response (${cost:.4f} USD, {response_time}ms)",
                 title_align="left",
-                border_style="yellow"
+                border_style="blue"
             ))
+
+            # Show reasoning for enhanced model selection
+            if reasoning:
+                self.console.print(Panel(
+                    reasoning,
+                    title="🎯 Why this model was selected",
+                    title_align="left",
+                    border_style="yellow"
+                ))
 
         # Add the enhanced response to conversation history (replacing the quick response)
         # Remove the last assistant message (quick response) and replace with enhanced
