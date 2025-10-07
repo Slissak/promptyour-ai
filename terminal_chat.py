@@ -309,7 +309,7 @@ class TerminalChat:
 
         # Get optional context
         context = Prompt.ask(
-            "📝 [dim]Additional context (optional)[/dim]",
+            "📝 [dim]Additional context or follow-up questions (optional)[/dim]",
             default="",
             console=self.console
         )
