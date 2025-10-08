@@ -1,0 +1,107 @@
+# Models Configuration
+# Easy to modify list of available models and their pricing
+#
+# UPDATING PRICING:
+# Run: python scripts/update_model_pricing.py
+# This will fetch the latest pricing from OpenRouter and update this file
+#
+# Last updated: 2025-10-08
+
+# Quick mode default model (used for fast one-liner responses)
+quick_mode_default:
+  model_id: nvidia/nemotron-nano-9b-v2:free
+  provider: openrouter
+  reason: "Zero cost, fast, reliable NVIDIA model"
+
+# Enhanced mode - Model selection tiers
+enhanced_mode_tiers:
+  budget:
+    - model_id: meta-llama/llama-3.2-1b-instruct
+      provider: openrouter
+      prompt_cost_per_1k: 0.000005
+      completion_cost_per_1k: 0.000010
+      context_length: 131072
+      use_cases: ["simple tasks", "budget-conscious"]
+
+  balanced:
+    - model_id: nvidia/nemotron-nano-9b-v2:free
+      provider: openrouter
+      prompt_cost_per_1k: 0.0
+      completion_cost_per_1k: 0.0
+      context_length: 128000
+      use_cases: ["general purpose", "zero cost"]
+
+    - model_id: meta-llama/llama-3.1-8b-instruct
+      provider: openrouter
+      prompt_cost_per_1k: 0.000020
+      completion_cost_per_1k: 0.000030
+      context_length: 131072
+      use_cases: ["general purpose", "good balance"]
+
+  premium:
+    - model_id: anthropic/claude-3-haiku
+      provider: openrouter
+      prompt_cost_per_1k: 0.00025
+      completion_cost_per_1k: 0.00125
+      context_length: 200000
+      use_cases: ["high quality", "fast responses"]
+
+    - model_id: anthropic/claude-3-sonnet
+      provider: openrouter
+      prompt_cost_per_1k: 0.003
+      completion_cost_per_1k: 0.015
+      context_length: 200000
+      use_cases: ["very high quality", "complex tasks"]
+
+# Free models (recommended for cost-conscious users)
+free_models:
+  - model_id: nvidia/nemotron-nano-9b-v2:free
+    provider: openrouter
+    context_length: 128000
+    description: "NVIDIA Nemotron Nano 9B - Fast and reliable"
+
+  - model_id: deepseek/deepseek-chat-v3.1:free
+    provider: openrouter
+    context_length: 163800
+    description: "DeepSeek Chat V3.1 - High context window"
+
+  - model_id: mistralai/mistral-small-3.2-24b-instruct:free
+    provider: openrouter
+    context_length: 131072
+    description: "Mistral Small 3.2 - Good for general tasks"
+
+  - model_id: meta-llama/llama-3.3-8b-instruct:free
+    provider: openrouter
+    context_length: 128000
+    description: "Meta Llama 3.3 8B - Reliable open source"
+
+# Thinking/Reasoning capable models
+thinking_models:
+  - model_id: anthropic/claude-sonnet-4
+    provider: openrouter
+    thinking_type: "anthropic"
+    default_reasoning_tokens: 8000
+    prompt_cost_per_1k: 0.003
+    completion_cost_per_1k: 0.015
+
+  - model_id: openai/o3-mini
+    provider: openrouter
+    thinking_type: "openai"
+    default_reasoning_effort: "high"
+    prompt_cost_per_1k: 0.001
+    completion_cost_per_1k: 0.003
+
+  - model_id: deepseek/deepseek-r1
+    provider: openrouter
+    thinking_type: "deepseek"
+    default_reasoning_effort: "high"
+    prompt_cost_per_1k: 0.00055
+    completion_cost_per_1k: 0.0028
+
+# Model aliases (for easier reference)
+model_aliases:
+  claude-3-haiku: "anthropic/claude-3-haiku"
+  claude-3-sonnet: "anthropic/claude-3-sonnet"
+  claude-3-opus: "anthropic/claude-3-opus"
+  gpt-4: "openai/gpt-4"
+  gpt-3.5-turbo: "openai/gpt-3.5-turbo"

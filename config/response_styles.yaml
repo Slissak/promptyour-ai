@@ -1,0 +1,24 @@
+# Response Style Configuration
+# Easy to modify list of response formatting styles
+# Each style has an ID, display name, output length, and description
+
+response_styles:
+  - id: paragraph_brief
+    name: Paragraph Brief
+    output_length: short
+    description: One big paragraph with shorter, concise output
+
+  - id: structured_detailed
+    name: Structured Detailed
+    output_length: long
+    description: Divided into points with more detailed, longer output
+
+  - id: instructions_only
+    name: Instructions Only
+    output_length: short
+    description: Only instructions without background explanations (shorter answer)
+
+  - id: comprehensive
+    name: Comprehensive
+    output_length: very_long
+    description: With background and explanations (long and comprehensive)

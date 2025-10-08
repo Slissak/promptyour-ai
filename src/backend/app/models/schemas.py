@@ -1,41 +1,44 @@
 """
 Pydantic schemas for request/response models
+
+NOTE: Themes, Audiences, and Response Styles are now loaded from YAML config files:
+- config/themes.yaml
+- config/audiences.yaml
+- config/response_styles.yaml
+
+To modify available options, edit those files instead of this code.
 """
 from typing import Optional, Dict, Any, List
 from enum import Enum
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-
-class ThemeType(str, Enum):
-    """Predefined themes for dropdown selection"""
-    ACADEMIC_HELP = "academic_help"
-    CREATIVE_WRITING = "creative_writing"
-    CODING_PROGRAMMING = "coding_programming"
-    BUSINESS_PROFESSIONAL = "business_professional"
-    PERSONAL_LEARNING = "personal_learning"
-    RESEARCH_ANALYSIS = "research_analysis"
-    PROBLEM_SOLVING = "problem_solving"
-    TUTORING_EDUCATION = "tutoring_education"
-    GENERAL_QUESTIONS = "general_questions"
+from app.core.config_loader import get_config_loader
 
 
-class AudienceType(str, Enum):
-    """Target audience for response tailoring"""
-    SMALL_KIDS = "small_kids"           # Ages 5-10
-    TEENAGERS = "teenagers"             # Ages 11-17
-    ADULTS = "adults"                   # Ages 18-65
-    UNIVERSITY_LEVEL = "university_level"  # College/University
-    PROFESSIONALS = "professionals"     # Industry experts
-    SENIORS = "seniors"                 # Ages 65+
+# ===== DYNAMIC ENUMS FROM CONFIG =====
+# These enums are generated from YAML config files for easy modification
+
+def _create_enum_from_config(enum_name: str, config_loader_method: str) -> type:
+    """Create an Enum dynamically from config loader"""
+    config_loader = get_config_loader()
+    ids = getattr(config_loader, config_loader_method)()
+
+    # Create enum members: {ID_UPPER: "id_value", ...}
+    enum_members = {id_val.upper(): id_val for id_val in ids}
+
+    return Enum(enum_name, enum_members, type=str)
 
 
-class ResponseStyle(str, Enum):
-    """Response style preferences for output formatting and length"""
-    PARAGRAPH_BRIEF = "paragraph_brief"           # One big paragraph (shorter output)
-    STRUCTURED_DETAILED = "structured_detailed"   # Divided into points (more detailed, longer output)
-    INSTRUCTIONS_ONLY = "instructions_only"       # Only instructions without background (shorter answer)
-    COMPREHENSIVE = "comprehensive"               # With background and explanations (long and comprehensive)
+# Generate enums from config files
+ThemeType = _create_enum_from_config("ThemeType", "get_theme_ids")
+AudienceType = _create_enum_from_config("AudienceType", "get_audience_ids")
+ResponseStyle = _create_enum_from_config("ResponseStyle", "get_response_style_ids")
+
+# Add docstrings
+ThemeType.__doc__ = "Themes loaded from config/themes.yaml - Edit that file to modify options"
+AudienceType.__doc__ = "Audiences loaded from config/audiences.yaml - Edit that file to modify options"
+ResponseStyle.__doc__ = "Response Styles loaded from config/response_styles.yaml - Edit that file to modify options"
 
 
 class MessageRole(str, Enum):

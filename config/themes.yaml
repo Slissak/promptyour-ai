@@ -1,0 +1,40 @@
+# Theme Configuration
+# Easy to modify list of available themes for user selection
+# Each theme has an ID, display name, and description
+
+themes:
+  - id: academic_help
+    name: Academic Help
+    description: Assistance with academic work, research, and studying
+
+  - id: creative_writing
+    name: Creative Writing
+    description: Help with creative content, stories, and artistic writing
+
+  - id: coding_programming
+    name: Coding & Programming
+    description: Software development, debugging, and code reviews
+
+  - id: business_professional
+    name: Business & Professional
+    description: Business analysis, professional communication, and workplace tasks
+
+  - id: personal_learning
+    name: Personal Learning
+    description: Learning new skills, hobbies, and personal development
+
+  - id: research_analysis
+    name: Research & Analysis
+    description: In-depth research, data analysis, and critical thinking
+
+  - id: problem_solving
+    name: Problem Solving
+    description: Solving complex problems and troubleshooting
+
+  - id: tutoring_education
+    name: Tutoring & Education
+    description: Educational support and tutoring assistance
+
+  - id: general_questions
+    name: General Questions
+    description: General inquiries and everyday questions

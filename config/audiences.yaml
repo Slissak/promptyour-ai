@@ -1,0 +1,34 @@
+# Audience Configuration
+# Easy to modify list of target audiences for response tailoring
+# Each audience has an ID, display name, age range, and description
+
+audiences:
+  - id: small_kids
+    name: Small Kids
+    age_range: "5-10"
+    description: Simple language suitable for young children
+
+  - id: teenagers
+    name: Teenagers
+    age_range: "11-17"
+    description: Age-appropriate content for teens
+
+  - id: adults
+    name: Adults
+    age_range: "18-65"
+    description: Standard adult-level communication
+
+  - id: university_level
+    name: University Level
+    age_range: "18-25"
+    description: Academic and intellectual content for college students
+
+  - id: professionals
+    name: Professionals
+    age_range: "25-65"
+    description: Industry expert level, technical and specialized
+
+  - id: seniors
+    name: Seniors
+    age_range: "65+"
+    description: Clear and patient communication for older adults
