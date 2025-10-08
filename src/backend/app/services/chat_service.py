@@ -240,7 +240,8 @@ class ChatService:
                 response_time_ms=llm_response.response_time_ms,
                 reasoning=model_choice.reasoning,
                 system_prompt=system_prompt,
-                raw_response=raw_llm_response.content  # Include RAW response for comparison
+                raw_response=raw_llm_response.content,  # Include RAW response for comparison
+                thinking=llm_response.thinking  # Store thinking internally (not shown to user)
             )
             
             logger.info(
@@ -348,7 +349,8 @@ class ChatService:
                 message_id=llm_response.message_id,
                 cost=llm_response.cost,
                 response_time_ms=llm_response.response_time_ms,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                thinking=llm_response.thinking  # Store thinking internally (not shown to user)
             )
 
             logger.info(
@@ -460,7 +462,8 @@ class ChatService:
                 message_id=llm_response.message_id,
                 cost=llm_response.cost,
                 response_time_ms=llm_response.response_time_ms,
-                system_prompt=""  # Always empty for RAW
+                system_prompt="",  # Always empty for RAW
+                thinking=llm_response.thinking  # Store thinking internally (not shown to user)
             )
 
             logger.info(

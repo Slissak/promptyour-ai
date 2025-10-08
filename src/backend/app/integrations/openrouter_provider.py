@@ -124,11 +124,59 @@ class OpenRouterProvider:
         
         # Parse response
         response_time_ms = int((time.time() - start_time) * 1000)
-        
-        try:
-            content = data["choices"][0]["message"]["content"]
-            usage = data.get("usage", {})
 
+        try:
+            message = data["choices"][0]["message"]
+            content = message.get("content", "")
+            thinking_content = None
+
+            # Extract thinking/reasoning from response (but don't show to user)
+            # Case 1: Anthropic models return content as array with thinking blocks
+            if isinstance(content, list):
+                thinking_blocks = []
+                text_blocks = []
+
+                for block in content:
+                    if isinstance(block, dict):
+                        if block.get("type") == "thinking":
+                            thinking_blocks.append(block.get("thinking", ""))
+                        elif block.get("type") == "text":
+                            text_blocks.append(block.get("text", ""))
+
+                # Combine thinking blocks (stored internally)
+                if thinking_blocks:
+                    thinking_content = "\n\n".join(thinking_blocks)
+
+                # Combine text blocks (shown to user)
+                content = "\n\n".join(text_blocks) if text_blocks else ""
+
+                logger.info(
+                    "Extracted thinking from Anthropic-style response",
+                    thinking_length=len(thinking_content) if thinking_content else 0,
+                    text_length=len(content)
+                )
+
+            # Case 2: OpenAI models return reasoning_details separately
+            elif "reasoning_details" in message:
+                reasoning_details = message.get("reasoning_details", [])
+                if reasoning_details:
+                    reasoning_texts = []
+                    for detail in reasoning_details:
+                        if isinstance(detail, dict):
+                            # Extract text or summary from reasoning
+                            if detail.get("type") == "reasoning.text":
+                                reasoning_texts.append(detail.get("text", ""))
+                            elif detail.get("type") == "reasoning.summary":
+                                reasoning_texts.append(detail.get("summary", ""))
+
+                    if reasoning_texts:
+                        thinking_content = "\n\n".join(reasoning_texts)
+                        logger.info(
+                            "Extracted thinking from OpenAI-style reasoning_details",
+                            thinking_length=len(thinking_content)
+                        )
+
+            usage = data.get("usage", {})
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             total_tokens = usage.get("total_tokens", prompt_tokens + completion_tokens)
@@ -138,6 +186,7 @@ class OpenRouterProvider:
                 model=openrouter_model,
                 content_length=len(content) if content else 0,
                 content_preview=content[:100] if content else "EMPTY",
+                has_thinking=bool(thinking_content),
                 tokens=total_tokens
             )
 
@@ -148,13 +197,14 @@ class OpenRouterProvider:
             message_id = self._generate_message_id()
 
             llm_response = LLMResponse(
-                content=content,
+                content=content,  # Only the text answer (no thinking shown to user)
                 model=request.model,
                 provider="openrouter",
                 tokens_used=total_tokens,
                 cost=cost,
                 response_time_ms=response_time_ms,
-                message_id=message_id
+                message_id=message_id,
+                thinking=thinking_content  # Stored internally for session/debug
             )
             
             logger.info(

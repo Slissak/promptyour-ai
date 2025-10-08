@@ -126,6 +126,7 @@ class LLMResponse(BaseModel):
     cost: float
     response_time_ms: int
     message_id: str
+    thinking: Optional[str] = None  # Internal reasoning/thinking (not shown to user)
 
 
 class ChatResponse(BaseModel):
@@ -139,6 +140,7 @@ class ChatResponse(BaseModel):
     reasoning: str = Field(..., description="Why this model was chosen")
     system_prompt: str = Field(..., description="System prompt used for this response")
     raw_response: Optional[str] = Field(None, description="RAW model response (no system prompt) for comparison")
+    thinking: Optional[str] = Field(None, description="Internal model reasoning/thinking (stored but not displayed to user)")
 
 
 class QuickResponse(BaseModel):
@@ -150,6 +152,7 @@ class QuickResponse(BaseModel):
     cost: float
     response_time_ms: int
     system_prompt: str = Field(..., description="System prompt used for this response")
+    thinking: Optional[str] = Field(None, description="Internal model reasoning/thinking (stored but not displayed to user)")
 
 
 class RawInput(BaseModel):
@@ -170,6 +173,7 @@ class RawResponse(BaseModel):
     cost: float
     response_time_ms: int
     system_prompt: str = Field(default="", description="System prompt (always empty for RAW responses)")
+    thinking: Optional[str] = Field(None, description="Internal model reasoning/thinking (stored but not displayed to user)")
 
 
 class UserRating(BaseModel):
