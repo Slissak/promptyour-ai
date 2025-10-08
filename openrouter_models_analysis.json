@@ -1,0 +1,291 @@
+{
+  "generated_at": "2025-10-08T09:15:21.092394",
+  "total_models": 325,
+  "suitable_models": 320,
+  "top_30_cheapest": [
+    {
+      "rank": 1,
+      "id": "openrouter/auto",
+      "name": "Auto Router",
+      "prompt_cost_per_1k": -1000.0,
+      "completion_cost_per_1k": -1000.0,
+      "estimated_quick_cost": -150.0,
+      "context_length": 2000000
+    },
+    {
+      "rank": 2,
+      "id": "alibaba/tongyi-deepresearch-30b-a3b:free",
+      "name": "Tongyi DeepResearch 30B A3B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 3,
+      "id": "meituan/longcat-flash-chat:free",
+      "name": "Meituan: LongCat Flash Chat (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 4,
+      "id": "nvidia/nemotron-nano-9b-v2:free",
+      "name": "NVIDIA: Nemotron Nano 9B V2 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 128000
+    },
+    {
+      "rank": 5,
+      "id": "deepseek/deepseek-chat-v3.1:free",
+      "name": "DeepSeek: DeepSeek V3.1 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 163800
+    },
+    {
+      "rank": 6,
+      "id": "openai/gpt-oss-20b:free",
+      "name": "OpenAI: gpt-oss-20b (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 7,
+      "id": "z-ai/glm-4.5-air:free",
+      "name": "Z.AI: GLM 4.5 Air (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 8,
+      "id": "z-ai/glm-4.5-air",
+      "name": "Z.AI: GLM 4.5 Air",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    },
+    {
+      "rank": 9,
+      "id": "qwen/qwen3-coder:free",
+      "name": "Qwen: Qwen3 Coder 480B A35B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 262144
+    },
+    {
+      "rank": 10,
+      "id": "moonshotai/kimi-k2:free",
+      "name": "MoonshotAI: Kimi K2 0711 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    },
+    {
+      "rank": 11,
+      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+      "name": "Venice: Uncensored (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    },
+    {
+      "rank": 12,
+      "id": "google/gemma-3n-e2b-it:free",
+      "name": "Google: Gemma 3n 2B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 8192
+    },
+    {
+      "rank": 13,
+      "id": "tencent/hunyuan-a13b-instruct:free",
+      "name": "Tencent: Hunyuan A13B Instruct (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    },
+    {
+      "rank": 14,
+      "id": "tngtech/deepseek-r1t2-chimera:free",
+      "name": "TNG: DeepSeek R1T2 Chimera (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 163840
+    },
+    {
+      "rank": 15,
+      "id": "mistralai/mistral-small-3.2-24b-instruct:free",
+      "name": "Mistral: Mistral Small 3.2 24B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 16,
+      "id": "moonshotai/kimi-dev-72b:free",
+      "name": "MoonshotAI: Kimi Dev 72B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 17,
+      "id": "deepseek/deepseek-r1-0528-qwen3-8b:free",
+      "name": "DeepSeek: Deepseek R1 0528 Qwen3 8B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 18,
+      "id": "deepseek/deepseek-r1-0528:free",
+      "name": "DeepSeek: R1 0528 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 163840
+    },
+    {
+      "rank": 19,
+      "id": "mistralai/devstral-small-2505:free",
+      "name": "Mistral: Devstral Small 2505 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    },
+    {
+      "rank": 20,
+      "id": "google/gemma-3n-e4b-it:free",
+      "name": "Google: Gemma 3n 4B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 8192
+    },
+    {
+      "rank": 21,
+      "id": "meta-llama/llama-3.3-8b-instruct:free",
+      "name": "Meta: Llama 3.3 8B Instruct (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 128000
+    },
+    {
+      "rank": 22,
+      "id": "qwen/qwen3-4b:free",
+      "name": "Qwen: Qwen3 4B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 40960
+    },
+    {
+      "rank": 23,
+      "id": "qwen/qwen3-30b-a3b:free",
+      "name": "Qwen: Qwen3 30B A3B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 40960
+    },
+    {
+      "rank": 24,
+      "id": "qwen/qwen3-8b:free",
+      "name": "Qwen: Qwen3 8B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 40960
+    },
+    {
+      "rank": 25,
+      "id": "qwen/qwen3-14b:free",
+      "name": "Qwen: Qwen3 14B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 40960
+    },
+    {
+      "rank": 26,
+      "id": "qwen/qwen3-235b-a22b:free",
+      "name": "Qwen: Qwen3 235B A22B (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 131072
+    },
+    {
+      "rank": 27,
+      "id": "tngtech/deepseek-r1t-chimera:free",
+      "name": "TNG: DeepSeek R1T Chimera (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 163840
+    },
+    {
+      "rank": 28,
+      "id": "microsoft/mai-ds-r1:free",
+      "name": "Microsoft: MAI DS R1 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 163840
+    },
+    {
+      "rank": 29,
+      "id": "shisa-ai/shisa-v2-llama3.3-70b:free",
+      "name": "Shisa AI: Shisa V2 Llama 3.3 70B  (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    },
+    {
+      "rank": 30,
+      "id": "arliai/qwq-32b-arliai-rpr-v1:free",
+      "name": "ArliAI: QwQ 32B RpR v1 (free)",
+      "prompt_cost_per_1k": 0.0,
+      "completion_cost_per_1k": 0.0,
+      "estimated_quick_cost": 0.0,
+      "context_length": 32768
+    }
+  ],
+  "recommendations": [
+    {
+      "category": "\ud83c\udd93 BEST FREE (RELIABLE)",
+      "id": "nvidia/nemotron-nano-9b-v2:free",
+      "name": "NVIDIA: Nemotron Nano 9B V2 (free)",
+      "estimated_quick_cost": 0.0
+    },
+    {
+      "category": "\ud83d\udcb0 CHEAPEST PAID (RELIABLE)",
+      "id": "meta-llama/llama-3.2-1b-instruct",
+      "name": "Meta: Llama 3.2 1B Instruct",
+      "estimated_quick_cost": 1.25e-06
+    }
+  ]
+}

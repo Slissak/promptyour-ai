@@ -283,8 +283,9 @@ class ChatService:
         try:
             # Step 1: Select fast, cost-effective model for quick responses
             # Prioritize speed and cost over complex reasoning
-            preferred_model = quick_input.force_model or "claude-3-haiku"
-            preferred_provider = quick_input.force_provider or "anthropic"
+            # Using NVIDIA Nemotron Nano 9B V2 (free): Zero cost, 128K context, reliable
+            preferred_model = quick_input.force_model or "nvidia/nemotron-nano-9b-v2:free"
+            preferred_provider = quick_input.force_provider or "openrouter"
 
             # Step 2: Process conversation history for context
             conversation_history_str = ""
