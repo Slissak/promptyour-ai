@@ -19,10 +19,14 @@ from app.core.config_loader import get_config_loader
 # ===== DYNAMIC ENUMS FROM CONFIG =====
 # These enums are generated from YAML config files for easy modification
 
-def _create_enum_from_config(enum_name: str, config_loader_method: str) -> type:
-    """Create an Enum dynamically from config loader"""
+def _create_enum_from_config(enum_name: str, config_loader_method: str, fallback_values: List[str] = None) -> type:
+    """Create an Enum dynamically from config loader with fallback values"""
     config_loader = get_config_loader()
     ids = getattr(config_loader, config_loader_method)()
+
+    # Use fallback values if config didn't load
+    if not ids and fallback_values:
+        ids = fallback_values
 
     # Create enum members: {ID_UPPER: "id_value", ...}
     enum_members = {id_val.upper(): id_val for id_val in ids}
@@ -30,10 +34,23 @@ def _create_enum_from_config(enum_name: str, config_loader_method: str) -> type:
     return Enum(enum_name, enum_members, type=str)
 
 
-# Generate enums from config files
-ThemeType = _create_enum_from_config("ThemeType", "get_theme_ids")
-AudienceType = _create_enum_from_config("AudienceType", "get_audience_ids")
-ResponseStyle = _create_enum_from_config("ResponseStyle", "get_response_style_ids")
+# Generate enums from config files with fallback values
+ThemeType = _create_enum_from_config(
+    "ThemeType",
+    "get_theme_ids",
+    fallback_values=["academic_help", "creative_writing", "coding_programming", "business_professional",
+                     "personal_learning", "research_analysis", "problem_solving", "tutoring_education", "general_questions"]
+)
+AudienceType = _create_enum_from_config(
+    "AudienceType",
+    "get_audience_ids",
+    fallback_values=["small_kids", "teenagers", "adults", "university_level", "professionals", "seniors"]
+)
+ResponseStyle = _create_enum_from_config(
+    "ResponseStyle",
+    "get_response_style_ids",
+    fallback_values=["paragraph_brief", "structured_detailed", "instructions_only", "comprehensive"]
+)
 
 # Add docstrings
 ThemeType.__doc__ = "Themes loaded from config/themes.yaml - Edit that file to modify options"

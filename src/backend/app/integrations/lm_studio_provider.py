@@ -4,7 +4,8 @@ Local LLM provider through LM Studio's OpenAI-compatible API
 """
 import asyncio
 import time
-from typing import Optional, Dict, Any, List
+import re
+from typing import Optional, Dict, Any, List, Tuple
 import httpx
 import json
 
@@ -95,43 +96,118 @@ class LMStudioProvider:
         
         # Parse response
         response_time_ms = int((time.time() - start_time) * 1000)
-        
+
         try:
-            content = data["choices"][0]["message"]["content"]
+            raw_content = data["choices"][0]["message"]["content"]
             usage = data.get("usage", {})
-            
+
+            # Extract thinking from content if present
+            content, thinking_content = self._extract_thinking(raw_content)
+
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             total_tokens = usage.get("total_tokens", prompt_tokens + completion_tokens)
-            
+
             # Local inference is free
             cost = self.local_cost_per_token * total_tokens
-            
+
             # Generate message ID
             message_id = self._generate_message_id()
-            
+
             llm_response = LLMResponse(
-                content=content,
+                content=content,  # Only the final answer (no thinking shown to user)
                 model=request.model,
                 provider="lm_studio",
                 tokens_used=total_tokens,
                 cost=cost,
                 response_time_ms=response_time_ms,
-                message_id=message_id
+                message_id=message_id,
+                thinking=thinking_content  # Stored internally for session/debug
             )
-            
+
             logger.info(
                 "LM Studio API success",
                 model=request.model,
                 tokens_used=total_tokens,
-                response_time_ms=response_time_ms
+                response_time_ms=response_time_ms,
+                has_thinking=bool(thinking_content),
+                thinking_length=len(thinking_content) if thinking_content else 0
             )
-            
+
             return llm_response
             
         except KeyError as e:
             logger.error("Failed to parse LM Studio response", error=str(e), response=data)
             raise LMStudioError(f"Invalid LM Studio response format: missing {e}")
+
+    def _extract_thinking(self, content: str) -> Tuple[str, Optional[str]]:
+        """
+        Extract thinking/reasoning from model response.
+
+        Handles common thinking patterns from models like Qwen, DeepSeek, etc.
+        Returns (final_answer, thinking_content)
+        """
+        if not content:
+            return content, None
+
+        thinking_content = None
+        final_answer = content
+
+        # Pattern 1: <think>...</think> tags (common in Qwen models)
+        think_pattern = r'<think>(.*?)</think>'
+        think_matches = re.findall(think_pattern, content, re.DOTALL | re.IGNORECASE)
+        if think_matches:
+            thinking_content = "\n\n".join(think_matches)
+            # Remove thinking tags from final answer
+            final_answer = re.sub(think_pattern, '', content, flags=re.DOTALL | re.IGNORECASE).strip()
+            logger.info(
+                "Extracted thinking from <think> tags",
+                thinking_length=len(thinking_content),
+                answer_length=len(final_answer)
+            )
+            return final_answer, thinking_content
+
+        # Pattern 2: <thinking>...</thinking> tags
+        thinking_pattern = r'<thinking>(.*?)</thinking>'
+        thinking_matches = re.findall(thinking_pattern, content, re.DOTALL | re.IGNORECASE)
+        if thinking_matches:
+            thinking_content = "\n\n".join(thinking_matches)
+            final_answer = re.sub(thinking_pattern, '', content, flags=re.DOTALL | re.IGNORECASE).strip()
+            logger.info(
+                "Extracted thinking from <thinking> tags",
+                thinking_length=len(thinking_content),
+                answer_length=len(final_answer)
+            )
+            return final_answer, thinking_content
+
+        # Pattern 3: <reasoning>...</reasoning> tags
+        reasoning_pattern = r'<reasoning>(.*?)</reasoning>'
+        reasoning_matches = re.findall(reasoning_pattern, content, re.DOTALL | re.IGNORECASE)
+        if reasoning_matches:
+            thinking_content = "\n\n".join(reasoning_matches)
+            final_answer = re.sub(reasoning_pattern, '', content, flags=re.DOTALL | re.IGNORECASE).strip()
+            logger.info(
+                "Extracted thinking from <reasoning> tags",
+                thinking_length=len(thinking_content),
+                answer_length=len(final_answer)
+            )
+            return final_answer, thinking_content
+
+        # Pattern 4: Markdown-style thinking blocks (```thinking ... ```)
+        md_thinking_pattern = r'```thinking\n(.*?)```'
+        md_thinking_matches = re.findall(md_thinking_pattern, content, re.DOTALL)
+        if md_thinking_matches:
+            thinking_content = "\n\n".join(md_thinking_matches)
+            final_answer = re.sub(md_thinking_pattern, '', content, flags=re.DOTALL).strip()
+            logger.info(
+                "Extracted thinking from markdown blocks",
+                thinking_length=len(thinking_content),
+                answer_length=len(final_answer)
+            )
+            return final_answer, thinking_content
+
+        # No thinking markers found - return original content
+        return final_answer, None
 
     def _generate_message_id(self) -> str:
         """Generate unique message ID"""

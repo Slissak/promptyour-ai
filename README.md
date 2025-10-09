@@ -39,7 +39,7 @@ promp_your_ai/
 ### Technology Stack
 - **Backend**: Python, FastAPI, WebSocket, Pydantic, UV package manager
 - **Web**: Next.js 15, TypeScript, Tailwind CSS, next-intl
-- **Mobile**: React Native, Expo SDK 54, TypeScript
+- **Mobile**: React Native, Expo SDK 52, TypeScript, Zustand, Expo Router
 - **Shared**: TypeScript, Axios HTTP client, conversation management
 
 ## 🚀 Quick Start
@@ -77,7 +77,8 @@ npm run dev
 cd src/mobile-frontend
 npm install
 npm start
-# Expo dev server runs on http://localhost:8081
+# Expo dev server - scan QR code with Expo Go app
+# Or press 'w' for web, 'i' for iOS simulator, 'a' for Android emulator
 ```
 
 ### 4. Terminal Chat (Optional)
@@ -222,12 +223,12 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001
 
 ## 📊 Project Status
 
-- ✅ **Backend API**: Complete with two-tier chat system
-- ✅ **Web Interface**: Full Next.js implementation with i18n
-- ✅ **Mobile Apps**: React Native/Expo implementation
+- ✅ **Backend API**: Complete with two-tier chat system and multiple AI providers
+- ✅ **Web Interface**: Full Next.js implementation with i18n and RTL support
+- ✅ **Mobile App**: Production-ready React Native/Expo app with Zustand and WebSocket
 - ✅ **Shared Library**: TypeScript API client with 95% code reuse
 - ✅ **Terminal Interface**: CLI for developers
-- ✅ **Testing**: Comprehensive test coverage
+- ✅ **Testing**: Comprehensive backend test coverage
 - ✅ **Documentation**: Complete setup and usage guides
 
 ## 🤝 Contributing
