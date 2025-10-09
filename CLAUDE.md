@@ -2,6 +2,56 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ GIT WORKFLOW - CRITICAL RULES
+
+**NEVER WORK DIRECTLY ON MAIN BRANCH!**
+
+### Branching Strategy
+
+**For ANY code changes (features, fixes, improvements):**
+
+1. **Create a feature branch** from main:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/descriptive-name
+   # or: git checkout -b fix/bug-description
+   ```
+
+2. **Make changes on the branch** (not main)
+
+3. **Commit changes** to the branch:
+   ```bash
+   git add .
+   git commit -m "Descriptive commit message"
+   ```
+
+4. **Push branch** to remote:
+   ```bash
+   git push origin feature/descriptive-name
+   ```
+
+5. **Ask user** before merging to main or creating pull requests
+
+### Branch Naming Conventions
+
+- `feature/` - New features (e.g., `feature/add-user-authentication`)
+- `fix/` - Bug fixes (e.g., `fix/response-timeout`)
+- `refactor/` - Code refactoring (e.g., `refactor/api-client`)
+- `docs/` - Documentation updates (e.g., `docs/update-readme`)
+- `test/` - Test additions (e.g., `test/mobile-frontend`)
+
+### When to Work on Main
+
+**ONLY for:**
+- Documentation-only updates (README, CLAUDE.md)
+- Minor typo fixes in documentation
+- Configuration file updates (when explicitly requested)
+
+**ALWAYS ASK FIRST** before committing to main!
+
+---
+
 ## Repository Overview
 
 "promp_your_ai" is a cross-platform AI chat application with a FastAPI backend and multiple frontend implementations (Web, Mobile, Terminal). The project features a two-tier chat system with intelligent model routing, theme-based responses, and audience targeting.
@@ -82,13 +132,51 @@ python terminal_chat.py --api http://localhost:8001          # Full mode
 - `make run-eval` - Run evaluations and benchmarks
 - `make clean` - Remove generated files and caches
 
+### Git Commands (Feature Branch Workflow)
+
+**Starting new work:**
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/your-feature-name
+```
+
+**During development:**
+```bash
+git status                    # Check what's changed
+git add <files>               # Stage specific files
+git commit -m "message"       # Commit changes
+git push origin feature/your-feature-name  # Push to remote
+```
+
+**Checking branch status:**
+```bash
+git branch                    # List local branches
+git branch -a                 # List all branches (local + remote)
+git log --oneline -10         # Recent commits
+```
+
+**Switching branches:**
+```bash
+git checkout main             # Switch to main
+git checkout feature/name     # Switch to feature branch
+```
+
 ## Development Standards
 
+### Code Quality
 - Code formatting with Black (88 character line length)
 - Type checking with MyPy (strict mode enabled)
 - Linting with flake8
 - Testing with pytest (with coverage reporting)
 - Python 3.8+ compatibility required
+
+### Git Standards
+- **NEVER commit directly to main** (use feature branches)
+- Write clear, descriptive commit messages
+- Keep commits focused and atomic
+- Push branches to remote for backup
+- Ask user before merging to main or creating PRs
 
 ## Architecture Notes
 
