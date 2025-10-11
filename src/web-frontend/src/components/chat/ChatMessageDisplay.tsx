@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@shared/types/api';
+import { useUserMode } from '@/hooks/useUserMode';
 
 interface ChatMessageDisplayProps {
   message: ChatMessage;
@@ -12,6 +13,7 @@ interface ChatMessageDisplayProps {
 
 export function ChatMessageDisplay({ message, onRequestEnhanced }: ChatMessageDisplayProps) {
   const t = useTranslations();
+  const { isAdvancedMode } = useUserMode();
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
 
   const isUser = message.role === 'user';
@@ -63,8 +65,8 @@ export function ChatMessageDisplay({ message, onRequestEnhanced }: ChatMessageDi
             <ReactMarkdown>{message.content}</ReactMarkdown>
           </div>
 
-          {/* System Prompt Section */}
-          {!isUser && hasSystemPrompt && (
+          {/* System Prompt Section - Only in Advanced Mode */}
+          {!isUser && hasSystemPrompt && isAdvancedMode && (
             <div className="mt-3 border-t border-gray-200 pt-2">
               <button
                 onClick={() => setShowSystemPrompt(!showSystemPrompt)}

@@ -7,8 +7,8 @@ import { getConversationManager } from '@shared/utils/conversation';
 import type { QuickInput, QuickResponse, UserInput, ChatResponse, ChatMessage, ThemeType, AudienceType, ResponseStyle } from '@shared/types/api';
 import { MessageRole } from '@shared/types/api';
 import { ChatMessageDisplay } from './ChatMessageDisplay';
-import { EnhancedOptionsModal } from './EnhancedOptionsModal';
 import { ComparisonView } from './ComparisonView';
+import { InlineEnhancedConfig } from './InlineEnhancedConfig';
 import { useUserMode } from '@/hooks/useUserMode';
 
 interface TwoTierChatProps {
@@ -21,18 +21,41 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showEnhancedModal, setShowEnhancedModal] = useState(false);
+  const [showInlineConfig, setShowInlineConfig] = useState(false);
   const [currentQuickResponse, setCurrentQuickResponse] = useState<QuickResponse | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [hasEnhancedResponse, setHasEnhancedResponse] = useState(false);
+
+  // Options from API
+  const [themes, setThemes] = useState<string[]>([]);
+  const [audiences, setAudiences] = useState<string[]>([]);
+  const [responseStyles, setResponseStyles] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const clientRef = useRef<PromptYourAIClient | null>(null);
   const conversationManagerRef = useRef(getConversationManager());
 
-  // Initialize API client
+  // Initialize API client and fetch options
   useEffect(() => {
-    clientRef.current = new PromptYourAIClient({ baseURL: 'http://localhost:8001' });
+    const initialize = async () => {
+      clientRef.current = new PromptYourAIClient({ baseURL: 'http://localhost:8001' });
+
+      try {
+        const [themesRes, audiencesRes, stylesRes] = await Promise.all([
+          clientRef.current.getThemes(),
+          clientRef.current.getAudiences(),
+          clientRef.current.getResponseStyles()
+        ]);
+
+        setThemes(themesRes.themes || []);
+        setAudiences(audiencesRes.audiences || []);
+        setResponseStyles(stylesRes.response_styles || []);
+      } catch (error) {
+        console.error('Failed to fetch options:', error);
+      }
+    };
+
+    initialize();
   }, []);
 
   const scrollToBottom = () => {
@@ -118,16 +141,20 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   };
 
   const handleRequestEnhanced = () => {
-    setShowEnhancedModal(true);
+    setShowInlineConfig(true);
   };
 
-  const handleEnhancedSubmit = async (theme: string, audience: string, responseStyle: string, additionalContext?: string) => {
+  const handleInlineConfigCancel = () => {
+    setShowInlineConfig(false);
+  };
+
+  const handleEnhancedSubmit = async (theme?: string, audience?: string, responseStyle?: string, additionalContext?: string) => {
     if (!clientRef.current || !currentQuestion) return;
 
     const conversationId = conversationManagerRef.current.getActiveConversation()?.metadata.id;
     if (!conversationId) return;
 
-    setShowEnhancedModal(false);
+    setShowInlineConfig(false);
     setIsLoading(true);
 
     try {
@@ -275,6 +302,17 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
                 />
               );
             })}
+
+            {/* Inline Enhanced Configuration */}
+            {showInlineConfig && (
+              <InlineEnhancedConfig
+                onSubmit={handleEnhancedSubmit}
+                onCancel={handleInlineConfigCancel}
+                themes={themes}
+                audiences={audiences}
+                responseStyles={responseStyles}
+              />
+            )}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-lg p-3 max-w-xs animate-pulse">
@@ -322,15 +360,6 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
         </form>
       </div>
 
-      {/* Enhanced Options Modal */}
-      {showEnhancedModal && (
-        <EnhancedOptionsModal
-          isOpen={showEnhancedModal}
-          onClose={() => setShowEnhancedModal(false)}
-          onSubmit={handleEnhancedSubmit}
-          question={currentQuestion}
-        />
-      )}
     </div>
   );
 }
