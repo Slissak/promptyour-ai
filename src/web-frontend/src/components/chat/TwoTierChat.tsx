@@ -182,18 +182,8 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
           }
         };
 
-        // Replace the quick response message with comparison message
-        setMessages(prev => {
-          const newMessages = [...prev];
-          // Find and replace the last quick response message
-          for (let i = newMessages.length - 1; i >= 0; i--) {
-            if (newMessages[i].metadata?.type === 'quick') {
-              newMessages[i] = comparisonMessage;
-              break;
-            }
-          }
-          return newMessages;
-        });
+        // Add comparison message (keep quick response visible)
+        setMessages(prev => [...prev, comparisonMessage]);
       } else {
         // REGULAR MODE: Add enhanced response as a new message
         const enhancedMessage: ChatMessage = {
