@@ -1,11 +1,13 @@
-import { NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { locales, isRTL } from '@/i18n/config';
+import { routing } from '@/i18n/routing';
+import { isRTL } from '@/i18n/config';
 import clsx from 'clsx';
+import '../globals.css';
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return routing.locales.map((locale) => ({ locale }));
 }
 
 export default async function LocaleLayout({
@@ -17,8 +19,8 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
 
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) {
+  // Ensure that the incoming `locale` is valid
+  if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
