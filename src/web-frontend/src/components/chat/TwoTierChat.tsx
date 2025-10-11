@@ -121,7 +121,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setShowEnhancedModal(true);
   };
 
-  const handleEnhancedSubmit = async (theme: string, audience: string, responseStyle: string) => {
+  const handleEnhancedSubmit = async (theme: string, audience: string, responseStyle: string, additionalContext?: string) => {
     if (!clientRef.current || !currentQuestion) return;
 
     const conversationId = conversationManagerRef.current.getActiveConversation()?.metadata.id;
@@ -131,9 +131,14 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setIsLoading(true);
 
     try {
+      // Combine question with additional context if provided
+      const fullQuestion = additionalContext
+        ? `${currentQuestion}\n\nAdditional context: ${additionalContext}`
+        : currentQuestion;
+
       // Step 2: Get enhanced response
       const enhancedInput: UserInput = {
-        question: currentQuestion,
+        question: fullQuestion,
         theme: theme as ThemeType,
         audience: audience as AudienceType,
         response_style: responseStyle as ResponseStyle,

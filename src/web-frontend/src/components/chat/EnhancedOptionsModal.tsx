@@ -8,12 +8,13 @@ import * as Select from '@radix-ui/react-select';
 interface EnhancedOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (theme: string, audience: string, responseStyle: string) => void;
+  onSubmit: (theme: string, audience: string, responseStyle: string, additionalContext?: string) => void;
   question: string;
 }
 
 export function EnhancedOptionsModal({ isOpen, onClose, onSubmit, question }: EnhancedOptionsModalProps) {
   const t = useTranslations();
+  const [additionalContext, setAdditionalContext] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('general_questions');
   const [selectedAudience, setSelectedAudience] = useState('adults');
   const [selectedResponseStyle, setSelectedResponseStyle] = useState('structured_detailed');
@@ -48,7 +49,7 @@ export function EnhancedOptionsModal({ isOpen, onClose, onSubmit, question }: En
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(selectedTheme, selectedAudience, selectedResponseStyle);
+    onSubmit(selectedTheme, selectedAudience, selectedResponseStyle, additionalContext || undefined);
   };
 
   return (
@@ -67,6 +68,20 @@ export function EnhancedOptionsModal({ isOpen, onClose, onSubmit, question }: En
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Additional Context */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Additional context or follow-up questions (optional)
+              </label>
+              <textarea
+                value={additionalContext}
+                onChange={(e) => setAdditionalContext(e.target.value)}
+                placeholder="Add any additional context, constraints, or follow-up questions here..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                rows={3}
+              />
+            </div>
+
             {/* Theme Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
