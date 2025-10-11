@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
+import { UserModeSelector } from '@/components/layout/UserModeSelector';
 import { TwoTierChat } from '@/components/chat/TwoTierChat';
 
 export default async function ChatPage({
@@ -23,7 +24,10 @@ export default async function ChatPage({
               {t('chat.subtitle')}
             </p>
           </div>
-          <LanguageSelector />
+          <div className="flex items-center gap-4">
+            <UserModeSelector />
+            <LanguageSelector />
+          </div>
         </header>
 
         {/* Chat Interface */}

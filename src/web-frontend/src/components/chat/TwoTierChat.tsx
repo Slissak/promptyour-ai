@@ -9,6 +9,7 @@ import { MessageRole } from '@shared/types/api';
 import { ChatMessageDisplay } from './ChatMessageDisplay';
 import { EnhancedOptionsModal } from './EnhancedOptionsModal';
 import { ComparisonView } from './ComparisonView';
+import { useUserMode } from '@/hooks/useUserMode';
 
 interface TwoTierChatProps {
   locale: string;
@@ -16,6 +17,7 @@ interface TwoTierChatProps {
 
 export function TwoTierChat({ locale }: TwoTierChatProps) {
   const t = useTranslations();
+  const { isAdvancedMode } = useUserMode();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -146,46 +148,67 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
         hasRawResponse: !!enhancedResponse.raw_response,
         rawResponseLength: enhancedResponse.raw_response?.length || 0,
         rawResponsePreview: enhancedResponse.raw_response?.substring(0, 100) || 'EMPTY',
-        enhancedContentLength: enhancedResponse.content?.length || 0
+        enhancedContentLength: enhancedResponse.content?.length || 0,
+        mode: isAdvancedMode ? 'advanced' : 'regular'
       });
 
-      // Create comparison message that replaces the quick response
-      // Note: We use raw_response from enhancedResponse for the left side (RAW), not the quick response
-      const comparisonMessage: ChatMessage = {
-        id: (Date.now() + 2).toString(),
-        role: MessageRole.ASSISTANT,
-        content: 'Comparison View', // Placeholder, actual content rendered by ComparisonView
-        timestamp: new Date().toISOString(),
-        metadata: {
-          type: 'comparison',
-          theme,
-          audience,
-          // Create a pseudo QuickResponse for the RAW response
-          quickResponse: {
-            content: enhancedResponse.raw_response || '',
-            model_used: enhancedResponse.model_used,
-            provider: enhancedResponse.provider,
-            message_id: enhancedResponse.message_id + '_raw',
-            cost: 0,
-            response_time_ms: 0,
-            system_prompt: ''  // Empty - completely RAW
-          },
-          enhancedResponse: enhancedResponse
-        }
-      };
-
-      // Replace the quick response message with comparison message
-      setMessages(prev => {
-        const newMessages = [...prev];
-        // Find and replace the last quick response message
-        for (let i = newMessages.length - 1; i >= 0; i--) {
-          if (newMessages[i].metadata?.type === 'quick') {
-            newMessages[i] = comparisonMessage;
-            break;
+      if (isAdvancedMode) {
+        // ADVANCED MODE: Show comparison view (RAW vs Enhanced)
+        const comparisonMessage: ChatMessage = {
+          id: (Date.now() + 2).toString(),
+          role: MessageRole.ASSISTANT,
+          content: 'Comparison View', // Placeholder, actual content rendered by ComparisonView
+          timestamp: new Date().toISOString(),
+          metadata: {
+            type: 'comparison',
+            theme,
+            audience,
+            // Create a pseudo QuickResponse for the RAW response
+            quickResponse: {
+              content: enhancedResponse.raw_response || '',
+              model_used: enhancedResponse.model_used,
+              provider: enhancedResponse.provider,
+              message_id: enhancedResponse.message_id + '_raw',
+              cost: 0,
+              response_time_ms: 0,
+              system_prompt: ''  // Empty - completely RAW
+            },
+            enhancedResponse: enhancedResponse
           }
-        }
-        return newMessages;
-      });
+        };
+
+        // Replace the quick response message with comparison message
+        setMessages(prev => {
+          const newMessages = [...prev];
+          // Find and replace the last quick response message
+          for (let i = newMessages.length - 1; i >= 0; i--) {
+            if (newMessages[i].metadata?.type === 'quick') {
+              newMessages[i] = comparisonMessage;
+              break;
+            }
+          }
+          return newMessages;
+        });
+      } else {
+        // REGULAR MODE: Add enhanced response as a new message
+        const enhancedMessage: ChatMessage = {
+          id: (Date.now() + 2).toString(),
+          role: MessageRole.ASSISTANT,
+          content: enhancedResponse.content,
+          timestamp: new Date().toISOString(),
+          metadata: {
+            type: 'enhanced',
+            model: enhancedResponse.model_used,
+            provider: enhancedResponse.provider,
+            system_prompt: enhancedResponse.system_prompt,
+            theme,
+            audience
+          }
+        };
+
+        setMessages(prev => [...prev, enhancedMessage]);
+      }
+
       setHasEnhancedResponse(true); // Mark that enhanced response was generated
 
       // Update conversation history with enhanced response
