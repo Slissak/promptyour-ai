@@ -153,7 +153,8 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
       });
 
       if (isAdvancedMode) {
-        // ADVANCED MODE: Show comparison view (RAW vs Enhanced)
+        // ADVANCED MODE: Add comparison view showing Quick vs Enhanced
+        // Use the actual quick response (not raw_response) for comparison
         const comparisonMessage: ChatMessage = {
           id: (Date.now() + 2).toString(),
           role: MessageRole.ASSISTANT,
@@ -163,32 +164,22 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
             type: 'comparison',
             theme,
             audience,
-            // Create a pseudo QuickResponse for the RAW response
-            quickResponse: {
-              content: enhancedResponse.raw_response || '',
-              model_used: enhancedResponse.model_used,
-              provider: enhancedResponse.provider,
-              message_id: enhancedResponse.message_id + '_raw',
+            // Use the original quick response for comparison
+            quickResponse: currentQuickResponse || {
+              content: '',
+              model_used: '',
+              provider: '',
+              message_id: '',
               cost: 0,
               response_time_ms: 0,
-              system_prompt: ''  // Empty - completely RAW
+              system_prompt: ''
             },
             enhancedResponse: enhancedResponse
           }
         };
 
-        // Replace the quick response message with comparison message
-        setMessages(prev => {
-          const newMessages = [...prev];
-          // Find and replace the last quick response message
-          for (let i = newMessages.length - 1; i >= 0; i--) {
-            if (newMessages[i].metadata?.type === 'quick') {
-              newMessages[i] = comparisonMessage;
-              break;
-            }
-          }
-          return newMessages;
-        });
+        // ADD comparison message (don't replace quick response)
+        setMessages(prev => [...prev, comparisonMessage]);
       } else {
         // REGULAR MODE: Add enhanced response as a new message
         const enhancedMessage: ChatMessage = {
