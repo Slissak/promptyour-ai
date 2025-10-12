@@ -95,13 +95,13 @@ class ModelSpecificPromptGenerator:
         }
 
     async def create_model_specific_prompt(
-        self, 
-        model: str, 
+        self,
+        model: str,
         context: ProcessedContext,
         conversation_history: Optional[str] = None
     ) -> str:
         """Generate intelligent, targeted prompt that combines question analysis, theme expertise, and audience psychology"""
-        
+
         logger.info(
             "Generating intelligent targeted prompt",
             model=model,
@@ -109,16 +109,16 @@ class ModelSpecificPromptGenerator:
             audience=context.audience,
             question_subject=context.inferred_subject
         )
-        
+
         # Analyze the question to understand what type of response is needed
         question_analysis = self._analyze_question_type(context.question)
-        
+
         # Create dynamic expert persona that perfectly combines theme + audience
         expert_persona = self._create_expert_persona(context.theme, context.audience)
-        
+
         # Build audience psychology profile
         audience_psychology = self._get_audience_psychology(context.audience)
-        
+
         # Generate specific instructions for this question + audience combination
         response_instructions = self._generate_response_instructions(
             context.question, context.theme, context.audience, question_analysis

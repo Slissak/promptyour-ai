@@ -2,15 +2,17 @@
 Chat API Routes
 Main endpoints for the chat functionality
 """
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
 
 from app.models.schemas import UserInput, QuickInput, RawInput, ChatResponse, QuickResponse, RawResponse, UserRating
 from app.services.chat_service import ChatService, ChatServiceError
+from app.core.config_loader import get_config_loader
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+config_loader = get_config_loader()
 
 router = APIRouter()
 
@@ -283,18 +285,72 @@ async def chat_health_check() -> Dict[str, Any]:
 @router.get("/models/available")
 async def get_available_models() -> Dict[str, Any]:
     """Get list of available models and their capabilities"""
-    
+
     try:
         models = chat_service.model_selector.get_available_models()
-        
+
         return {
             "models": models,
             "count": len(models)
         }
-        
+
     except Exception as e:
         logger.error("Error fetching available models", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch available models"
+        )
+
+
+@router.get("/options/themes")
+async def get_themes() -> Dict[str, List[str]]:
+    """
+    Get available themes from config/themes.yaml
+    Returns list of theme IDs that can be used in chat requests
+    """
+    try:
+        theme_ids = config_loader.get_theme_ids()
+        logger.info(f"Fetched {len(theme_ids)} themes")
+        return {"themes": theme_ids}
+    except Exception as e:
+        logger.error(f"Error fetching themes: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch themes"
+        )
+
+
+@router.get("/options/audiences")
+async def get_audiences() -> Dict[str, List[str]]:
+    """
+    Get available audiences from config/audiences.yaml
+    Returns list of audience IDs that can be used in chat requests
+    """
+    try:
+        audience_ids = config_loader.get_audience_ids()
+        logger.info(f"Fetched {len(audience_ids)} audiences")
+        return {"audiences": audience_ids}
+    except Exception as e:
+        logger.error(f"Error fetching audiences: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch audiences"
+        )
+
+
+@router.get("/options/response-styles")
+async def get_response_styles() -> Dict[str, List[str]]:
+    """
+    Get available response styles from config/response_styles.yaml
+    Returns list of response style IDs that can be used in chat requests
+    """
+    try:
+        style_ids = config_loader.get_response_style_ids()
+        logger.info(f"Fetched {len(style_ids)} response styles")
+        return {"response_styles": style_ids}
+    except Exception as e:
+        logger.error(f"Error fetching response styles: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch response styles"
         )

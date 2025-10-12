@@ -85,9 +85,9 @@ class QuickInput(BaseModel):
 class UserInput(BaseModel):
     """Complete user input structure"""
     question: str = Field(..., description="The user's main question or request", min_length=1)
-    theme: ThemeType = Field(..., description="Selected theme from dropdown")
-    audience: AudienceType = Field(AudienceType.ADULTS, description="Target audience for response")
-    response_style: ResponseStyle = Field(ResponseStyle.STRUCTURED_DETAILED, description="Response style preference for output formatting and length")
+    theme: Optional[ThemeType] = Field(None, description="Selected theme from dropdown (optional)")
+    audience: Optional[AudienceType] = Field(None, description="Target audience for response (optional, defaults to adults if not specified)")
+    response_style: Optional[ResponseStyle] = Field(None, description="Response style preference for output formatting and length (optional, defaults to structured_detailed if not specified)")
     context: Optional[str] = Field(None, description="Additional context sentences provided by user")
     conversation_id: Optional[str] = Field(None, description="Conversation ID for history")
     message_history: Optional[List[ChatMessage]] = Field(default_factory=list, description="Previous messages in conversation")
@@ -99,11 +99,11 @@ class ProcessedContext(BaseModel):
     """Processed and enriched context from user input"""
     # Original input
     question: str
-    theme: ThemeType
-    audience: AudienceType
-    response_style: ResponseStyle
-    context: Optional[str]
-    conversation_id: Optional[str]
+    theme: Optional[ThemeType] = None
+    audience: Optional[AudienceType] = None
+    response_style: Optional[ResponseStyle] = None
+    context: Optional[str] = None
+    conversation_id: Optional[str] = None
     
     # Inferred/processed fields
     inferred_subject: str = Field(..., description="Auto-detected subject area")

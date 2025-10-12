@@ -69,9 +69,9 @@ export interface QuickInput {
 
 export interface UserInput {
   question: string;
-  theme: ThemeType;
-  audience: AudienceType;
-  response_style: ResponseStyle;
+  theme?: ThemeType;
+  audience?: AudienceType;
+  response_style?: ResponseStyle;
   context?: string;
   conversation_id?: string;
   message_history?: ChatMessage[];

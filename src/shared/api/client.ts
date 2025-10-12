@@ -151,6 +151,24 @@ export class PromptYourAIClient {
     return response.data;
   }
 
+  // Get available themes
+  async getThemes(): Promise<{ themes: string[] }> {
+    const response = await this.client.get('/api/v1/chat/options/themes');
+    return response.data;
+  }
+
+  // Get available audiences
+  async getAudiences(): Promise<{ audiences: string[] }> {
+    const response = await this.client.get('/api/v1/chat/options/audiences');
+    return response.data;
+  }
+
+  // Get available response styles
+  async getResponseStyles(): Promise<{ response_styles: string[] }> {
+    const response = await this.client.get('/api/v1/chat/options/response-styles');
+    return response.data;
+  }
+
   // Cancel request (for future implementation)
   async cancelRequest(requestId: string): Promise<void> {
     // This would be implemented when the backend supports request cancellation

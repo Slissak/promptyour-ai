@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "PromptYour.AI Web Frontend with Multi-lingual Support",
   "scripts": {
+    "generate:config": "node scripts/generate-config.js",
+    "predev": "npm run generate:config",
     "dev": "next dev",
+    "prebuild": "npm run generate:config",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

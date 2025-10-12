@@ -34,7 +34,8 @@ export class ConversationManager {
   private activeConversationId: string | null = null;
 
   constructor() {
-    this.loadFromStorage();
+    // Don't load from storage - start fresh on each page load
+    // this.loadFromStorage();
   }
 
   // Conversation lifecycle
@@ -208,6 +209,19 @@ export class ConversationManager {
     return true;
   }
 
+  clearAllConversations(): void {
+    this.conversations.clear();
+    this.activeConversationId = null;
+    // Clear localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.removeItem('promptyour_conversations');
+      } catch (error) {
+        console.error('Failed to clear conversations from localStorage:', error);
+      }
+    }
+  }
+
   // Utility methods
   private generateConversationId(): string {
     return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -251,18 +265,11 @@ export class ConversationManager {
   }
 
   // Persistence (localStorage for web, AsyncStorage for mobile)
+  // Disabled - user wants fresh start on each page reload and new chat
   private saveToStorage() {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const data = {
-          conversations: Array.from(this.conversations.entries()),
-          activeConversationId: this.activeConversationId
-        };
-        localStorage.setItem('promptyour_conversations', JSON.stringify(data));
-      } catch (error) {
-        console.error('Failed to save conversations to localStorage:', error);
-      }
-    }
+    // Persistence disabled - conversations don't persist across page reloads
+    // This ensures clean history management per session
+    return;
   }
 
   private loadFromStorage() {

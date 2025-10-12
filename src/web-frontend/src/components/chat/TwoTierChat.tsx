@@ -10,6 +10,7 @@ import { ChatMessageDisplay } from './ChatMessageDisplay';
 import { ComparisonView } from './ComparisonView';
 import { InlineEnhancedConfig } from './InlineEnhancedConfig';
 import { useUserMode } from '@/hooks/useUserMode';
+import { THEMES, AUDIENCES, RESPONSE_STYLES } from '@/config/generated-options';
 
 interface TwoTierChatProps {
   locale: string;
@@ -25,37 +26,23 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   const [currentQuickResponse, setCurrentQuickResponse] = useState<QuickResponse | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [hasEnhancedResponse, setHasEnhancedResponse] = useState(false);
+  const [conversationTheme, setConversationTheme] = useState<string | undefined>(undefined);
+  const [conversationAudience, setConversationAudience] = useState<string | undefined>(undefined);
+  const [conversationResponseStyle, setConversationResponseStyle] = useState<string | undefined>(undefined);
+  const [currentQuestionHistory, setCurrentQuestionHistory] = useState<ChatMessage[]>([]);
 
-  // Options from API
-  const [themes, setThemes] = useState<string[]>([]);
-  const [audiences, setAudiences] = useState<string[]>([]);
-  const [responseStyles, setResponseStyles] = useState<string[]>([]);
+  // Options loaded from generated config (built from YAML at build time)
+  const themes = Array.from(THEMES);
+  const audiences = Array.from(AUDIENCES);
+  const responseStyles = Array.from(RESPONSE_STYLES);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const clientRef = useRef<PromptYourAIClient | null>(null);
   const conversationManagerRef = useRef(getConversationManager());
 
-  // Initialize API client and fetch options
+  // Initialize API client
   useEffect(() => {
-    const initialize = async () => {
-      clientRef.current = new PromptYourAIClient({ baseURL: 'http://localhost:8001' });
-
-      try {
-        const [themesRes, audiencesRes, stylesRes] = await Promise.all([
-          clientRef.current.getThemes(),
-          clientRef.current.getAudiences(),
-          clientRef.current.getResponseStyles()
-        ]);
-
-        setThemes(themesRes.themes || []);
-        setAudiences(audiencesRes.audiences || []);
-        setResponseStyles(stylesRes.response_styles || []);
-      } catch (error) {
-        console.error('Failed to fetch options:', error);
-      }
-    };
-
-    initialize();
+    clientRef.current = new PromptYourAIClient({ baseURL: 'http://localhost:8001' });
   }, []);
 
   const scrollToBottom = () => {
@@ -83,7 +70,14 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
       conversationManagerRef.current.setActiveConversation(conversationId);
     }
 
-    // Add user message to conversation
+    // Get message history BEFORE adding current message
+    // This ensures the current question is NOT included in the history
+    const previousHistory = conversationManagerRef.current.getMessageHistory(conversationId);
+
+    // Store this history so enhanced response can use the same context
+    setCurrentQuestionHistory(previousHistory);
+
+    // Add user message to UI
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: MessageRole.USER,
@@ -93,14 +87,13 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
 
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
-    conversationManagerRef.current.addUserMessage(conversationId, question);
 
     try {
-      // Step 1: Get quick response
+      // Step 1: Get quick response (with previous history only, not including current question)
       const quickInput: QuickInput = {
         question,
         conversation_id: conversationId,
-        message_history: conversationManagerRef.current.getMessageHistory(conversationId)
+        message_history: previousHistory
       };
 
       const quickResponse = await clientRef.current.sendQuickMessage(quickInput);
@@ -120,6 +113,9 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
       };
 
       setMessages(prev => [...prev, quickMessage]);
+
+      // Now add both user message and quick response to conversation history
+      conversationManagerRef.current.addUserMessage(conversationId, question);
       conversationManagerRef.current.addQuickResponse(conversationId, quickResponse);
       setCurrentQuickResponse(quickResponse);
 
@@ -157,6 +153,16 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setShowInlineConfig(false);
     setIsLoading(true);
 
+    // Save conversation preferences on first enhanced request, or use existing ones
+    const finalTheme = theme || conversationTheme;
+    const finalAudience = audience || conversationAudience;
+    const finalResponseStyle = responseStyle || conversationResponseStyle;
+
+    // Save preferences for future requests in this conversation
+    if (theme) setConversationTheme(theme);
+    if (audience) setConversationAudience(audience);
+    if (responseStyle) setConversationResponseStyle(responseStyle);
+
     try {
       // Combine question with additional context if provided
       const fullQuestion = additionalContext
@@ -164,13 +170,15 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
         : currentQuestion;
 
       // Step 2: Get enhanced response
+      // Use the SAME message history that was used for quick response
+      // (i.e., history BEFORE the current question)
       const enhancedInput: UserInput = {
         question: fullQuestion,
-        theme: theme as ThemeType,
-        audience: audience as AudienceType,
-        response_style: responseStyle as ResponseStyle,
+        theme: finalTheme as ThemeType | undefined,
+        audience: finalAudience as AudienceType | undefined,
+        response_style: finalResponseStyle as ResponseStyle | undefined,
         conversation_id: conversationId,
-        message_history: conversationManagerRef.current.getMessageHistory(conversationId)
+        message_history: currentQuestionHistory
       };
 
       const enhancedResponse = await clientRef.current.sendEnhancedMessage(enhancedInput);
@@ -236,8 +244,25 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
       // Update conversation history with enhanced response
       conversationManagerRef.current.addEnhancedResponse(conversationId, enhancedResponse);
 
-    } catch (error) {
-      console.error('Failed to get enhanced response:', error);
+    } catch (error: any) {
+      console.error('Failed to get enhanced response:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        error: error
+      });
+
+      // Show error message to user
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 3).toString(),
+        role: MessageRole.ASSISTANT,
+        content: `Sorry, I encountered an error getting the enhanced response: ${error?.response?.data?.detail || error?.message || 'Unknown error'}`,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          type: 'error'
+        }
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
       setCurrentQuickResponse(null);
@@ -249,6 +274,13 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     setCurrentQuickResponse(null);
     setCurrentQuestion('');
     setHasEnhancedResponse(false);
+    setCurrentQuestionHistory([]); // Clear message history for new conversation
+    // Reset conversation preferences for new conversation
+    setConversationTheme(undefined);
+    setConversationAudience(undefined);
+    setConversationResponseStyle(undefined);
+    // Clear all previous conversations and start fresh
+    conversationManagerRef.current.clearAllConversations();
     const newConversationId = conversationManagerRef.current.createConversation();
     conversationManagerRef.current.setActiveConversation(newConversationId);
   };
@@ -311,6 +343,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
                 themes={themes}
                 audiences={audiences}
                 responseStyles={responseStyles}
+                isFirstEnhancedRequest={!conversationTheme}
               />
             )}
             {isLoading && (

@@ -16,8 +16,8 @@ class ConfigLoader:
     """Centralized configuration loader for easy-to-modify YAML configs"""
 
     def __init__(self):
-        # Path to config directory
-        self.config_dir = Path(__file__).parent.parent.parent.parent / "config"
+        # Path to config directory (project root / config)
+        self.config_dir = Path(__file__).parent.parent.parent.parent.parent / "config"
         self._cache = {}
 
     def _load_yaml(self, filename: str) -> Dict[str, Any]:

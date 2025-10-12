@@ -221,6 +221,9 @@ pnpm-lock.yaml
 .next/
 out/
 
+# Auto-generated frontend config files
+src/web-frontend/src/config/generated-options.ts
+
 # React Native / Expo
 .expo/
 dist/

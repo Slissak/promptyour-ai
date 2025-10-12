@@ -161,11 +161,16 @@ class UserInputProcessor:
         # 6. Determine if clarification is needed
         requires_clarification = processing_confidence < 0.6 or complexity_score < 0.1
         
+        # Apply defaults for optional fields if not provided
+        theme = user_input.theme or ThemeType.GENERAL_QUESTIONS
+        audience = user_input.audience or AudienceType.ADULTS
+        response_style = user_input.response_style or ResponseStyle.STRUCTURED_DETAILED
+
         context = ProcessedContext(
             question=user_input.question,
-            theme=user_input.theme,
-            audience=user_input.audience,
-            response_style=user_input.response_style,
+            theme=theme,
+            audience=audience,
+            response_style=response_style,
             context=user_input.context,
             conversation_id=user_input.conversation_id,
             inferred_subject=inferred_subject,
@@ -187,12 +192,14 @@ class UserInputProcessor:
         
         return context
 
-    def _infer_subject(self, theme: ThemeType, full_text: str) -> Tuple[str, float]:
+    def _infer_subject(self, theme: Optional[ThemeType], full_text: str) -> Tuple[str, float]:
         """Infer specific subject from theme and text content"""
-        
-        # Start with theme-based subject hints
-        theme_info = self.theme_subject_mapping[theme]
-        primary_subjects = theme_info["primary_subjects"]
+
+        # Start with theme-based subject hints (if theme is provided)
+        primary_subjects = []
+        if theme and theme in self.theme_subject_mapping:
+            theme_info = self.theme_subject_mapping[theme]
+            primary_subjects = theme_info["primary_subjects"]
         
         # Analyze text for specific subject keywords
         text_lower = full_text.lower()
@@ -217,17 +224,22 @@ class UserInputProcessor:
             confidence = min(max_score / 5.0, 1.0)  # Normalize to 0-1
             
             return best_subject, confidence
-        
-        # Fallback to theme's primary subject
-        primary_subject = primary_subjects[0]
-        return primary_subject, 0.5  # Medium confidence for theme-only inference
 
-    def _infer_complexity(self, theme: ThemeType, full_text: str) -> Tuple[str, float]:
+        # Fallback to theme's primary subject (or general knowledge if no theme)
+        if primary_subjects:
+            primary_subject = primary_subjects[0]
+            return primary_subject, 0.5  # Medium confidence for theme-only inference
+        else:
+            return "general knowledge", 0.3  # Low confidence when no theme provided
+
+    def _infer_complexity(self, theme: Optional[ThemeType], full_text: str) -> Tuple[str, float]:
         """Infer complexity level from theme and text indicators"""
-        
-        # Get theme complexity hint
-        theme_info = self.theme_subject_mapping[theme]
-        theme_complexity_hint = theme_info["complexity_hint"]
+
+        # Get theme complexity hint (if theme is provided)
+        theme_complexity_hint = "general"
+        if theme and theme in self.theme_subject_mapping:
+            theme_info = self.theme_subject_mapping[theme]
+            theme_complexity_hint = theme_info["complexity_hint"]
         
         # Analyze text for complexity indicators
         text_lower = full_text.lower()
@@ -274,7 +286,7 @@ class UserInputProcessor:
         else:
             return "beginner"
 
-    def _calculate_complexity_score(self, theme: ThemeType, complexity_level: str, text_length: int, subject: str) -> float:
+    def _calculate_complexity_score(self, theme: Optional[ThemeType], complexity_level: str, text_length: int, subject: str) -> float:
         """Calculate numerical complexity score 0-1"""
         
         # Base score from complexity level
