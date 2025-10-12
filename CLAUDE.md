@@ -198,8 +198,11 @@ git checkout feature/name     # Switch to feature branch
 - Theme-based responses (9 themes: coding, creative, business, etc.)
 - Audience targeting (6 levels: kids to experts)
 - Response style customization (brief, detailed, instructions, comprehensive)
+- **Optional enhanced configuration** - user can select any, all, or no parameters
+- **Build-time config generation** - YAML → TypeScript pipeline with type safety
+- **Conversation state management** - preferences remembered within conversation
+- **Session-based history** - clean isolation per conversation, no cross-chat leakage
 - Multi-language support (English, Arabic, Hebrew with RTL)
-- Conversation history persistence
 - Real-time WebSocket communication with REST fallback
 
 ### Development Tooling
@@ -210,9 +213,32 @@ git checkout feature/name     # Switch to feature branch
 - MyPy type checking (strict mode)
 - Flake8 linting
 
-## Current Status (October 9, 2025)
+## Current Status (October 12, 2025)
 
-### Completed Features
+### Recently Completed Features (October 12, 2025)
+- ✅ **Enhanced Response Configuration System**
+  - Optional theme/audience/response_style parameters (user can select any combination)
+  - Smart defaults applied when parameters not provided
+  - First enhanced request shows all options, subsequent requests show only additional context
+  - Conversation state management (preferences remembered within conversation)
+
+- ✅ **Build-Time Configuration Generation**
+  - Industry-standard YAML → TypeScript generation pipeline
+  - Auto-generates on `npm run dev` and `npm run build`
+  - Single source of truth (config/ YAML files)
+  - Type-safe with const assertions
+
+- ✅ **Conversation History Isolation**
+  - Fixed critical bug where system prompt showed history from multiple chats
+  - Current question no longer included in message_history
+  - Session-based conversations (no localStorage persistence)
+  - Complete history wipe on new chat or page reload
+
+- ✅ **UI Size Reduction**
+  - Enhanced configuration window reduced to ~1/3 of original size
+  - More compact while maintaining readability
+
+### Previously Completed Features
 - ✅ Backend API with three-tier chat system (Quick/Enhanced/Raw)
 - ✅ Web frontend (Next.js 15) with full i18n support (EN/AR/HE with RTL)
 - ✅ Mobile frontend (Expo SDK 52) with Zustand, Expo Router, and WebSocket support
@@ -222,7 +248,6 @@ git checkout feature/name     # Switch to feature branch
 - ✅ Centralized configuration system (config/ YAML files)
 - ✅ Extended thinking/reasoning support for thinking-capable models
 - ✅ Free NVIDIA Nemotron Nano 9B model for quick responses
-- ✅ All changes committed and pushed to main branch
 
 ### Active Development
 - 🔄 Add comprehensive tests for mobile frontend
