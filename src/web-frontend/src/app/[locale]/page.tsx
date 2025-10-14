@@ -1,6 +1,8 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { LanguageSelector } from '@/components/layout/LanguageSelector';
+import { createClient } from '@/lib/supabase/server';
+import { UserMenu } from '@/components/auth/UserMenu';
 
 export default async function HomePage({
   params
@@ -10,6 +12,10 @@ export default async function HomePage({
   const { locale } = await params;
   const t = await getTranslations();
 
+  // Get authenticated user
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
@@ -18,7 +24,19 @@ export default async function HomePage({
           <h1 className="text-3xl font-bold text-gray-900">
             {t('chat.title')}
           </h1>
-          <LanguageSelector />
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            {user ? (
+              <UserMenu userEmail={user.email || ''} />
+            ) : (
+              <Link
+                href={`/${locale}/login`}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
         </header>
 
         {/* Hero Section */}
