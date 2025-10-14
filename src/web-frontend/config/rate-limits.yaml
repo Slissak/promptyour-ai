@@ -1,0 +1,39 @@
+# Rate Limiting Configuration
+# Controls usage limits for users
+#
+# To modify limits:
+# 1. Update values below
+# 2. Run: npm run generate:config
+# 3. Restart dev server
+
+rate_limits:
+  # Maximum number of chats per user
+  max_chats_per_user: 5
+
+  # Maximum number of messages per chat (total count)
+  max_messages_per_chat: 8
+
+  # Message weight by response type
+  message_weights:
+    quick_response: 1
+    enhanced_response: 2
+
+  # When to reset usage counts
+  # Options: "never", "daily", "weekly", "monthly"
+  reset_period: "never"
+
+  # Warning threshold (percentage of limit)
+  # Show warning when usage reaches this percentage
+  warning_threshold: 80
+
+# Display settings
+display:
+  # Show usage counter in chat
+  show_usage_counter: true
+
+  # Show warning messages
+  show_warnings: true
+
+  # Position of usage display
+  # Options: "top", "bottom"
+  usage_display_position: "top"
