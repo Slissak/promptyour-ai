@@ -168,8 +168,8 @@ CREATE TABLE chat_usage (
 
 ---
 
-### 5. Error Logging & Monitoring 🔴
-**Status**: Not Started - **NEEDS DISCUSSION**
+### 5. Error Logging & Monitoring 🟢
+**Status**: Completed - **Sentry Free Tier**
 **Branch**: `feature/error-logging`
 **Priority**: High
 **Estimated Time**: 1 week (including discussion and testing)
@@ -245,30 +245,51 @@ Sentry.init({
 - ✅ Personal identification data (be GDPR compliant)
 - ✅ Full email content
 
-**Questions for Discussion**:
-1. Which option do you prefer? (Sentry, Custom, or Hybrid)
-2. What's your budget for monitoring? (Sentry paid plans start at $29/month)
-3. Do you want user session replay? (see what user did before error)
-4. Real-time alerts (email/Slack) for critical errors?
-5. Performance monitoring (track API response times)?
-6. GDPR considerations - where should data be stored?
+**Decision Made**: ✅ **Sentry Free Tier** (Option 1)
 
-**Recommended Solution** (Pending Discussion):
-- Start with **Sentry free tier** (5K errors/month)
-- Supplement with **custom logging in Supabase** for non-critical events
-- Set up alerts for:
-  - Authentication failures (>10 in 5 minutes)
-  - API errors (>50 in 1 hour)
-  - Payment failures
-  - Critical system errors
+User Requirements:
+1. ✅ Minimal/no cost → **Free tier (5,000 errors/month, $0)**
+2. ✅ No real-time monitoring needed → **Disabled alerts**
+3. ✅ No session replay needed → **Disabled replay**
+4. ✅ Simple setup → **Automatic error tracking**
 
-**Files to Create/Modify** (TBD after discussion):
-- `sentry.client.config.ts`
-- `sentry.server.config.ts`
-- `sentry.edge.config.ts`
-- `src/lib/logging/logger.ts`
-- `src/lib/logging/types.ts`
-- Environment variables for Sentry DSN
+**Implementation Completed**:
+
+**Files Created**:
+- ✅ `sentry.client.config.ts` - Client-side error tracking
+- ✅ `sentry.server.config.ts` - Server-side error tracking
+- ✅ `sentry.edge.config.ts` - Edge runtime error tracking
+- ✅ `next.config.js` - Updated with Sentry integration
+- ✅ `SENTRY_SETUP.md` - Complete setup guide
+- ✅ `.env.example` - Environment variable template
+
+**Features Implemented**:
+- Automatic JavaScript/TypeScript error tracking
+- API error tracking (Supabase, OpenRouter, etc.)
+- Performance monitoring (page loads, API calls)
+- User context tracking
+- Stack traces with source maps
+- Error filtering (404s, auth errors, rate limits excluded)
+- Free tier optimizations (no session replay, no source map upload)
+
+**Error Filtering**:
+The following errors are NOT tracked (to save quota):
+- 404 errors (expected user behavior)
+- "Email not confirmed" (expected auth flow)
+- Rate limit errors (expected when limits hit)
+
+**Setup Required**:
+1. Create free Sentry account at sentry.io
+2. Create Next.js project in Sentry
+3. Copy DSN to `.env.local`:
+   ```
+   NEXT_PUBLIC_SENTRY_DSN=https://xxxxx@o000000.ingest.sentry.io/0000000
+   ```
+4. Restart dev server
+
+See `SENTRY_SETUP.md` for complete instructions.
+
+**Cost**: $0/month (Free tier: 5,000 errors/month)
 
 ---
 
@@ -445,11 +466,11 @@ await supabase.auth.admin.deleteSession(sessionId);
 
 ### Sprint 1: Critical Security Features
 **Timeline**: Week 1-2
-**Status**: 🟡 In Progress
+**Status**: 🟢 Completed
 
 - [x] Password Reset Flow ✅ (Completed)
 - [x] Rate Limiting ✅ (Completed)
-- [ ] Error Logging & Monitoring (plan + setup)
+- [x] Error Logging & Monitoring ✅ (Completed - Sentry Free Tier)
 
 ### Sprint 2: User Management
 **Timeline**: Week 3-4
