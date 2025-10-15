@@ -64,8 +64,8 @@ Redirected to login
 
 ---
 
-### 4. Rate Limiting 🔴
-**Status**: Not Started
+### 4. Rate Limiting 🟢
+**Status**: Completed
 **Branch**: `feature/rate-limiting`
 **Priority**: High
 **Estimated Time**: 2 days
@@ -79,14 +79,14 @@ Redirected to login
 - Configuration should be in same place as themes/audience/response styles
 
 **Implementation Plan**:
-- [ ] Add rate limit configuration to YAML config files
-- [ ] Create rate limiting utility functions
-- [ ] Track chat count per user in Supabase
-- [ ] Track message count per chat
-- [ ] Implement usage checking middleware
-- [ ] Create usage display component for user
-- [ ] Handle limit exceeded errors gracefully
-- [ ] Admin override capability (future)
+- [x] Add rate limit configuration to YAML config files
+- [x] Create rate limiting utility functions
+- [x] Track chat count per user in Supabase
+- [x] Track message count per chat
+- [x] Implement usage checking functions
+- [x] Create usage display component for user
+- [x] Handle limit exceeded errors gracefully
+- [x] Admin override capability (reset function)
 
 **Configuration Structure** (in `config/rate-limits.yaml`):
 ```yaml
@@ -147,7 +147,24 @@ CREATE TABLE chat_usage (
 - ✅ Limits enforced before sending request
 - ✅ User can see current usage
 - ✅ Clear error messages when limits exceeded
-- ✅ Usage resets properly (if configured)
+- ✅ Usage resets properly (function available)
+- ✅ Visual progress bars with color coding
+- ✅ Warning messages at 80% usage
+- ✅ Row Level Security for usage data
+
+**Implementation Notes**:
+- Created `config/rate-limits.yaml` for easy configuration
+- Database tables: `user_usage` (chat count), `chat_usage` (message count per chat)
+- Database functions for tracking and querying usage
+- TypeScript types in `src/types/usage.ts`
+- Query functions in `src/lib/usage/queries.ts`
+- Server actions in `src/lib/usage/actions.ts`
+- UsageDisplay component shows real-time usage with progress bars
+- Color-coded warnings: green → yellow (80%) → red (100%)
+- Prevents actions when limits reached with clear error messages
+- Admin reset function for manual override
+- RLS policies ensure users only see their own usage
+- Comprehensive README with integration examples
 
 ---
 
@@ -431,7 +448,7 @@ await supabase.auth.admin.deleteSession(sessionId);
 **Status**: 🟡 In Progress
 
 - [x] Password Reset Flow ✅ (Completed)
-- [ ] Rate Limiting
+- [x] Rate Limiting ✅ (Completed)
 - [ ] Error Logging & Monitoring (plan + setup)
 
 ### Sprint 2: User Management
