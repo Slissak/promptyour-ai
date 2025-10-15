@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { signOut } from '@/lib/auth/actions';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
 interface UserMenuProps {
   userEmail: string;
@@ -65,6 +66,21 @@ export function UserMenu({ userEmail }: UserMenuProps) {
               <p className="text-sm text-gray-500">Signed in as</p>
               <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
             </div>
+            <Link
+              href={`/${locale}/profile`}
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Profile
+            </Link>
+            <Link
+              href={`/${locale}/profile/sessions`}
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Sessions
+            </Link>
+            <div className="border-t border-gray-200"></div>
             <button
               onClick={handleSignOut}
               disabled={isLoading}
