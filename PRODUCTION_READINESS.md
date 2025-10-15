@@ -257,19 +257,19 @@ Sentry.init({
 
 ## Important Features (Should Have Soon)
 
-### 8. Custom User Data Storage 🔴
-**Status**: Not Started
+### 8. Custom User Data Storage 🟢
+**Status**: Completed
 **Branch**: `feature/user-profiles`
 **Priority**: Medium-High
 **Estimated Time**: 2 days
 
 **Implementation Plan**:
-- [ ] Design user profiles schema
-- [ ] Create Supabase tables with RLS policies
-- [ ] Implement automatic profile creation on signup
-- [ ] Create profile management pages
-- [ ] Add profile edit functionality
-- [ ] Display user preferences in UI
+- [x] Design user profiles schema
+- [x] Create Supabase tables with RLS policies
+- [x] Implement automatic profile creation on signup
+- [x] Create profile management pages
+- [x] Add profile edit functionality
+- [x] Display user preferences in UI
 
 **Database Schema**:
 ```sql
@@ -344,12 +344,27 @@ CREATE TRIGGER on_auth_user_created
 - Database migration SQL file
 
 **Acceptance Criteria**:
-- ✅ Profile created automatically on signup
+- ✅ Profile created automatically on signup (via database trigger)
 - ✅ OAuth data populates profile (name, avatar)
-- ✅ User can view their profile
-- ✅ User can edit profile fields
+- ✅ User can view their profile at `/[locale]/profile`
+- ✅ User can edit profile fields at `/[locale]/profile/edit`
 - ✅ RLS policies prevent unauthorized access
-- ✅ Preferences saved and used in chat
+- ✅ Preferences saved (theme, audience, response style)
+- ✅ Usage statistics tracked (total chats, total messages)
+- ✅ Profile accessible from user menu dropdown
+
+**Implementation Notes**:
+- Created `user_profiles` table with full RLS policies
+- Automatic profile creation via `handle_new_user()` trigger
+- Auto-updates `updated_at` timestamp on profile changes
+- TypeScript types in `src/types/profile.ts`
+- Query functions in `src/lib/supabase/queries/profiles.ts`
+- Server actions in `src/lib/profile/actions.ts`
+- Profile view page with all user information displayed
+- Profile edit page with form validation
+- Usage tracking functions: `increment_chat_count()` and `increment_message_count()`
+- User menu updated with "Your Profile" link
+- Migration files with rollback instructions in `migrations/README.md`
 
 ---
 
@@ -421,9 +436,9 @@ await supabase.auth.admin.deleteSession(sessionId);
 
 ### Sprint 2: User Management
 **Timeline**: Week 3-4
-**Status**: 🔴 Not Started
+**Status**: 🟡 In Progress
 
-- [ ] Custom User Data Storage
+- [x] Custom User Data Storage ✅ (Completed)
 - [ ] Session Management
 
 ---
