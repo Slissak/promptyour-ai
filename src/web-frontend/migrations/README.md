@@ -1,110 +1,80 @@
 # Database Migrations
 
-This directory contains SQL migration files for the Supabase database.
+This directory contains SQL migration files for setting up the Supabase database schema.
 
 ## Running Migrations
 
 ### Option 1: Supabase Dashboard (Recommended)
 
-1. Go to your [Supabase Dashboard](https://app.supabase.com/)
-2. Select your project
-3. Navigate to **SQL Editor**
-4. Click **New query**
-5. Copy and paste the contents of each migration file in order:
-   - `001_create_user_profiles.sql`
-   - `002_add_usage_functions.sql`
-6. Click **Run** to execute each migration
+1. Log in to your Supabase project at https://app.supabase.com
+2. Navigate to the SQL Editor (left sidebar)
+3. Open each migration file in this directory in order (001, 002, 003...)
+4. Copy the contents of the migration file
+5. Paste into the SQL Editor
+6. Click "Run" to execute the migration
 
 ### Option 2: Supabase CLI
 
 If you have the Supabase CLI installed:
 
 ```bash
-# Run a specific migration
-supabase db execute --file migrations/001_create_user_profiles.sql
+# Link your project (first time only)
+supabase link --project-ref your-project-ref
 
-# Or run all migrations in order
-supabase db execute --file migrations/001_create_user_profiles.sql
-supabase db execute --file migrations/002_add_usage_functions.sql
-```
-
-### Option 3: psql Command Line
-
-If you have PostgreSQL client installed:
-
-```bash
-# Connect to your database
-psql "postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
-
-# Run migrations
-\i migrations/001_create_user_profiles.sql
-\i migrations/002_add_usage_functions.sql
+# Apply migrations
+supabase db push
 ```
 
 ## Migration Files
 
 ### 001_create_user_profiles.sql
 Creates the `user_profiles` table with:
-- Basic profile information (name, bio, avatar)
+- User information (name, email, avatar, bio)
 - User preferences (theme, audience, response style)
-- Usage tracking (total chats, total messages)
+- Usage tracking (total chats, messages)
 - Row Level Security (RLS) policies
-- Automatic profile creation trigger on user signup
-- Auto-update `updated_at` trigger
+- Automatic profile creation trigger
+- Timestamp management
 
-### 002_add_usage_functions.sql
-Creates database functions for tracking usage:
-- `increment_chat_count(user_id)` - Increment total chats
-- `increment_message_count(user_id, count_value)` - Increment total messages
+**Required for**: Profile pages to work
 
-## Verification
+### 002_add_usage_functions.sql (if exists)
+Additional functionality for usage tracking
 
-After running migrations, verify they worked correctly:
+### 003_create_usage_tracking.sql (if exists)
+Rate limiting and usage tracking tables
 
-```sql
--- Check if user_profiles table exists
-SELECT * FROM information_schema.tables
-WHERE table_schema = 'public'
-AND table_name = 'user_profiles';
+## Important Notes
 
--- Check if functions exist
-SELECT routine_name
-FROM information_schema.routines
-WHERE routine_type = 'FUNCTION'
-AND specific_schema = 'public'
-AND routine_name LIKE 'increment_%';
+- **Run migrations in order** (001, 002, 003, etc.)
+- **Safe to re-run**: Migrations use `IF EXISTS` checks and can be safely re-run
+- **RLS enabled**: All tables have Row Level Security to protect user data
+- **Auto-creation**: New user profiles are automatically created when users sign up
 
--- Check if RLS is enabled
-SELECT tablename, rowsecurity
-FROM pg_tables
-WHERE schemaname = 'public'
-AND tablename = 'user_profiles';
-```
+## Verifying Migrations
 
-## Rollback
+After running migrations, verify in Supabase Dashboard:
 
-If you need to rollback these migrations:
+1. Go to **Table Editor**
+2. Check that `user_profiles` table exists
+3. Go to **SQL Editor** and run:
 
 ```sql
--- Drop functions
-DROP FUNCTION IF EXISTS increment_chat_count(UUID);
-DROP FUNCTION IF EXISTS increment_message_count(UUID, INT);
-
--- Drop triggers
-DROP TRIGGER IF EXISTS on_user_profile_updated ON public.user_profiles;
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
--- Drop functions used by triggers
-DROP FUNCTION IF EXISTS public.handle_updated_at();
-DROP FUNCTION IF EXISTS public.handle_new_user();
-
--- Drop table (WARNING: This will delete all user profile data!)
-DROP TABLE IF EXISTS public.user_profiles CASCADE;
+SELECT * FROM user_profiles LIMIT 1;
 ```
 
-## Notes
+If you see the table structure, the migration was successful.
 
-- Migrations are designed to be idempotent - you can run them multiple times safely
-- The auto-profile creation trigger will create profiles for new users automatically
-- Existing users may need to have profiles created manually or via the `ensureUserProfile` action
-- RLS policies ensure users can only access their own profile data
+## Troubleshooting
+
+### "Table already exists" error
+- This is safe to ignore if re-running migrations
+- Migrations use `CREATE TABLE IF NOT EXISTS`
+
+### "Permission denied" error
+- Make sure you're running migrations as the database owner
+- Use the SQL Editor in Supabase Dashboard
+
+### "Function already exists" error
+- Safe to ignore
+- Migrations use `CREATE OR REPLACE FUNCTION`

@@ -68,11 +68,19 @@ export function UserMenu({ userEmail }: UserMenuProps) {
             </div>
             <Link
               href={`/${locale}/profile`}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
-              Your Profile
+              Profile
             </Link>
+            <Link
+              href={`/${locale}/profile/sessions`}
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Sessions
+            </Link>
+            <div className="border-t border-gray-200"></div>
             <button
               onClick={handleSignOut}
               disabled={isLoading}
