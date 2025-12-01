@@ -41,15 +41,15 @@ User Request → Context Enhancement → Model Selection → System Prompt Gener
 - [x] **🧠 REVOLUTIONARY Dynamic system prompt generation** (Intelligent question analysis + audience psychology)
 - [x] **💬 ENHANCED WebSocket chat implementation** (Continuous conversation + memory)
 
-### Phase 3: Frontend Development (Weeks 7-10) ⚡ TERMINAL INTERFACE COMPLETED
-- [x] **🖥️ RICH Terminal chat interface** (35,978 lines - Advanced terminal UI)
-- [x] **👥 Audience selection interface** (6 audience types with age descriptions)
+### Phase 3: Frontend Development (Weeks 7-10) ✅ COMPLETED
+- [x] **🖥️ RICH Terminal chat interface** (Full-featured CLI with debug mode)
+- [x] **👥 Audience selection interface** (6 audience types)
 - [x] **🎯 Theme selection interface** (9 specialized themes)
 - [x] **💭 Real-time chat features** (Continuous conversation + /new command)
-- [x] **🤖 Intelligent model selection interface** (Context-aware recommendations)
-- [ ] Web chat interface (React/Next.js) - *Not yet started*
-- [ ] Mobile app (React Native) - *Not yet started*
-- [ ] User authentication UI - *Not yet started*
+- [x] **🤖 Intelligent model selection interface** (Context-aware)
+- [x] **Web chat interface** (Next.js 15 with full i18n - EN/AR/HE with RTL)
+- [x] **Mobile app** (React Native - Expo SDK 52, production-ready)
+- [ ] User authentication UI - *Backend ready, UI pending*
 - [ ] Admin dashboard - *Not yet started*
 
 ### Phase 4: Evaluation Systems (Weeks 11-12)
@@ -67,7 +67,14 @@ User Request → Context Enhancement → Model Selection → System Prompt Gener
 - [ ] Security testing
 - [ ] Load testing
 
-### Phase 6: Production & Monitoring (Weeks 15-16)
+### Phase 6: Code Refinement (Week 15)
+- [x] Check for unused code
+- [x] Clean code
+- [x] Check for duplicate code we can combine
+- [x] Create a list of all libraries and tools being used and their location
+- [ ] Use Context7 to validate each library/tool is implemented using the latest Documnetations and code examples
+
+### Phase 7: Production & Monitoring (Weeks 15-16)
 - [ ] Production deployment
 - [ ] Monitoring setup
 - [ ] Analytics implementation
@@ -133,7 +140,7 @@ Speed-Focused:
   - general_questions.j2 (General knowledge & information)
 
 ✅ Audience-Specific Adaptations (6 total):
-  - small_kids (Ages 5-10): Simple language, encouraging tone
+  - small_kids (Ages 5-10): Relatable examples, engaging content
   - teenagers (Ages 11-17): Relatable examples, engaging content
   - adults (Ages 18-65): Professional, practical approach
   - university_level: Academic rigor, critical thinking
@@ -506,6 +513,11 @@ deployments/
   - RAW: Only user question (no system prompt, no history)
   - Enhanced: Full prompt engineering with context, history, audience targeting
 - **ComparisonView Component**: Visual diff showing both prompts and responses
+- **Real-Time Mode Toggling**:
+  - Switch between Regular (👤) and Advanced (🔬) modes during conversation
+  - Mode changes take effect immediately on next enhanced request
+  - Ref-based state tracking prevents React closure issues
+  - Files: `TwoTierChat.tsx`, `useUserMode.ts`, `UserModeSelector.tsx`
 
 **🎨 Response Style System** ✨ NEW
 - **paragraph_brief**: Concise narrative paragraphs (1 paragraph)
@@ -581,6 +593,7 @@ State Reset Demo:    ✅ 10/10 CHECKS PASSED
 - ✅ Advanced terminal + web + mobile interfaces
 - ✅ Two-tier response system (quick + enhanced)
 - ✅ RAW vs Enhanced comparison
+- ✅ **Real-time mode toggling** (switch between Regular/Advanced mid-conversation)
 - ✅ Response style preferences (4 styles)
 - ✅ **Optional enhanced configuration** (select any combination of parameters)
 - ✅ **Build-time config generation** (YAML → TypeScript with type safety)
@@ -591,6 +604,7 @@ State Reset Demo:    ✅ 10/10 CHECKS PASSED
 - ✅ Theme-specific adaptations (9 themes)
 - ✅ Complete state reset with `/new` command
 - ✅ Comprehensive test coverage
+- ✅ **Debug logging system** (comprehensive state tracking)
 
 **Technical Metrics:**
 - Backend: 7,500+ lines of Python with extended thinking support
@@ -606,9 +620,65 @@ State Reset Demo:    ✅ 10/10 CHECKS PASSED
 - AI Providers: 5 integrations (OpenRouter, Anthropic, Groq, LM Studio, local)
 - Free Models: NVIDIA Nemotron Nano 9B V2 for zero-cost quick responses
 
-### 🔄 RECENT ACCOMPLISHMENTS (October 2025)
+### 🔄 RECENT ACCOMPLISHMENTS (November 2025)
 
-**Latest Updates (October 12, 2025):**
+**Latest Updates (November 1, 2025):**
+1. ✅ **Shared Library Refactoring**
+   - **Problem Solved**: The `shared` directory contained a mix of Python and TypeScript code, causing import errors and making it difficult to maintain.
+   - **Solution Implemented**: Separated the Python and TypeScript code into `shared_python` and `shared_ts` directories, respectively.
+   - **Key Features**:
+     - Clean separation of concerns between frontend and backend code.
+     - Improved maintainability and reduced complexity.
+     - Resolved all import errors related to the `shared` directory.
+   - **Technical Implementation**:
+     - Created `shared_python` and `shared_ts` directories.
+     - Moved all Python files to `shared_python` and all TypeScript files to `shared_ts`.
+     - Updated all imports to reflect the new directory structure.
+     - Deleted the old `shared` directory.
+   - **Files Modified**:
+     - All files that imported from the `shared` directory.
+
+**Previous Updates (October 15, 2025):**
+1. ✅ **Mode Toggle Fix - Real-Time Switching** 🔬
+   - **Problem Solved**: React closure issue preventing mode changes during conversation
+   - **Solution Implemented**: Ref-based state tracking (`isAdvancedModeRef`)
+   - **Key Features**:
+     - Mode changes take effect immediately when toggled
+     - Users can switch between Regular (👤) and Advanced (🔬) mid-conversation
+     - Mode is re-checked after API requests complete
+     - Each new enhanced request uses current mode, not stale value
+   - **Technical Implementation**:
+     - Added `useRef` to track current mode value
+     - Updated mode ref in `useEffect` when mode changes
+     - Modified `handleEnhancedSubmit` to read from ref instead of state
+     - Double-check mechanism after async API calls
+   - **Files Modified**:
+     - `src/web-frontend/src/components/chat/TwoTierChat.tsx`
+     - Added: `isAdvancedModeRef` ref tracking
+     - Updated: `handleEnhancedSubmit` to use ref value
+     - Updated: `handleRequestEnhanced` with mode logging
+   - **User Experience**:
+     - Regular Mode: Shows only enhanced response
+     - Advanced Mode: Shows RAW vs Enhanced comparison
+     - Seamless toggling without page reload or new chat
+2. ✅ **Comprehensive Debug Logging System**
+   - Mode change tracking (`🔄 USER MODE CHANGED`)
+   - Function call tracking with mode values
+   - Message creation type logging (comparison vs enhanced-only)
+   - Rendering path visualization
+   - Pre and post-API request mode validation
+   - Helps diagnose state synchronization issues
+   - Can be easily removed for production (all logs clearly marked)
+
+**Summary of Today's Work:**
+- Fixed critical UX issue where mode toggle didn't work during conversations
+- Implemented ref-based state management to solve React closure problem
+- Added comprehensive debug logging for future troubleshooting
+- Mode toggling now works seamlessly - users can switch anytime mid-conversation
+- Backend already supports both modes (RAW comparison always generated)
+- Frontend now properly displays the correct view based on current mode
+
+**Updates (October 12, 2025):**
 1. ✅ **Enhanced Response Configuration System**
    - Optional parameters (theme/audience/response_style can all be optional)
    - Smart defaults (GENERAL_QUESTIONS, ADULTS, STRUCTURED_DETAILED)
@@ -673,8 +743,7 @@ State Reset Demo:    ✅ 10/10 CHECKS PASSED
 2. **User Ratings System**: Collect feedback on responses
 3. **Evaluation Pipeline**: A/B testing infrastructure
 4. **Mobile Frontend Tests**: Add comprehensive test suite
-5. **Shared Library Integration**: Refactor mobile to use src/shared/
-6. **Production Deployment**: AWS/GCP setup with CI/CD
+5. **Production Deployment**: AWS/GCP setup with CI/CD
 
 **Future Enhancements:**
 - [ ] Database persistence (PostgreSQL)
@@ -715,3 +784,43 @@ Complete database integration and user authentication to enable persistent conve
 **🚀 Status: PRODUCTION-READY SYSTEM - Ready for User Testing & Deployment**
 
 The system is fully functional across all platforms (Web, Mobile, Terminal) with a three-tier chat architecture that demonstrates clear value through RAW vs Enhanced comparisons. Features include extended thinking/reasoning support, centralized configuration, free model options, and comprehensive cross-platform implementation. The mobile app is production-ready with Expo SDK 52, Zustand state management, and WebSocket support. All core features are implemented and tested.
+
+---
+
+## 📝 Recent Progress and Open Issues (Updated November 30, 2025)
+
+### Progress:
+
+*   **Terminal Chat:** Fixed debug comparison view by implementing proper WebSocket debug callback in backend. Verified with test suite.
+*   **Web App:** Added "Debug - Comparison" button to chat interface to facilitate easy testing of RAW vs Enhanced mode.
+*   **Verification:** Confirmed that RAW mode sends only user question (no system prompt/history) while Enhanced uses full prompt engineering pipeline.
+*   **Frontend:** Removed "Debug Mode" button from the front page.
+*   **Database Schema Refactoring:**
+    *   Created `src/backend/app/db/base_class.py` for the SQLAlchemy `Base` class, resolving circular import issues.
+    *   Created `src/backend/app/db/models.py` for `Conversation` and `Message` SQLAlchemy models.
+    *   Updated `src/backend/app/db/database.py` to import `Base` from `base_class.py` and `app.db.models`.
+    *   Updated `src/backend/alembic/env.py` to import `Base` from `base_class.py`, import `app.db.models`, explicitly load `.env` from the project root, and configure Alembic with a synchronous database URL derived from the environment.
+*   **Pydantic Warnings Resolved:** Applied `model_config['protected_namespaces'] = ()` to `ChatResponse`, `QuickResponse`, and `RawResponse` Pydantic models in `src/backend/app/models/schemas.py` to resolve "protected namespace" warnings.
+
+### Issues Encountered (and Current Status):
+
+1.  **`ModuleNotFoundError: No module named 'app'` during Alembic autogenerate:**
+    *   **Cause:** Python path not correctly configured for Alembic to find `src/backend/app`.
+    *   **Resolution:** Added `sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))` to `src/backend/alembic/env.py`. **(Resolved)**
+
+2.  **`sqlalchemy.exc.InvalidRequestError: The asyncio extension requires an async driver to be used. The loaded 'psycopg2' is not async.` during Alembic autogenerate:**
+    *   **Cause:** `create_async_engine` was being called with a synchronous `postgresql://` URL, and `env.py` was trying to use `settings.DATABASE_URL` which was not correctly configured for async.
+    *   **Resolution:** Refactored `env.py` to use a synchronous engine for Alembic's online mode and to explicitly load `DATABASE_URL` from `.env` and convert it to a synchronous URL. **(Resolved)**
+
+3.  **`ImportError: cannot import name 'Base' from partially initialized module 'app.db.database' (most likely due to a circular import)`:**
+    *   **Cause:** Circular dependency between `env.py`, `database.py`, and `models.py` due to `Base` definition and imports.
+    *   **Resolution:** Extracted `Base` class into `src/backend/app/db/base_class.py` and adjusted imports in `database.py`, `models.py`, and `env.py`. **(Resolved)**
+
+4.  **`psycopg2.OperationalError: could not translate host name "db.dvafcvbeqltbepwidjzb.supabase.co" to address: nodename nor servname provided, or not known` during Alembic autogenerate:**
+    *   **Cause:** The `DATABASE_URL` was pointing to a direct Supabase connection that was not IPv4 compatible, and the system's DNS could not resolve it. This was compounded by an environment variable overriding the `.env` file.
+    *   **Resolution Attempted:**
+        *   Identified the need to use the Supabase Session Pooler URI.
+        *   Instructed user to update `.env` with the Session Pooler URI (`postgresql+asyncpg://postgres.dvafcvbeqltbepwidjzb:Sm7EZTh5R2YIV84@aws-1-us-east-2.pooler.supabase.com:5432/postgres`).
+        *   Modified `src/backend/alembic/env.py` to explicitly load `.env` from the project root and configure Alembic's `sqlalchemy.url` directly from `os.environ`.
+        *   Instructed user to `unset DATABASE_URL` in their terminal.
+    *   **Current Status:** Debug prints in `env.py` *still* show the old direct connection hostname, indicating a persistent environment variable issue despite `unset` and `load_dotenv()`. User has confirmed `unset DATABASE_URL` returns empty and will restart the terminal. **(Pending User Action / Re-evaluation)**

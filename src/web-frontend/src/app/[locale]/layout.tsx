@@ -6,26 +6,24 @@ import { isRTL } from '@/i18n/config';
 import clsx from 'clsx';
 import '../globals.css';
 
+import { Providers } from './providers';
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
 export default async function LocaleLayout({
   children,
-  params
+  params: { locale }
 }: {
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
+  params: { locale: string };
 }) {
-  const { locale } = await params;
-
   // Ensure that the incoming `locale` is valid
-  if (!hasLocale(routing.locales, locale)) {
+  if (!routing.locales.includes(locale)) {
     notFound();
   }
 
-  // Providing all messages to the client
-  // side is the easiest way to get started
   const messages = await getMessages();
 
   const direction = isRTL(locale) ? 'rtl' : 'ltr';
@@ -36,9 +34,9 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={direction}>
       <body className={clsx(fontClass, direction)}>
-        <NextIntlClientProvider messages={messages}>
+        <Providers locale={locale} messages={messages}>
           {children}
-        </NextIntlClientProvider>
+        </Providers>
       </body>
     </html>
   );

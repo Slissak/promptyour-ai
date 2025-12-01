@@ -7,10 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from app.core.config import settings
-from app.core.logging import setup_logging
-from app.db.database import create_tables
-from app.api.v1.router import api_router
+from backend.app.core.config import settings
+from backend.app.core.logging import setup_logging
+from backend.app.api.v1.router import api_router
+from backend.app.models.user import User
+from shared_python.db.models.usage import UserUsage
+from backend.app.db.models import Conversation, Message
 
 
 @asynccontextmanager
@@ -36,10 +38,7 @@ app = FastAPI(
 )
 
 # Security middleware
-app.add_middleware(
-    TrustedHostMiddleware, 
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
 # CORS middleware
 app.add_middleware(
@@ -71,16 +70,11 @@ async def http_exception_handler(request, exc):
     """Custom HTTP exception handler"""
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail, "status_code": exc.status_code}
+        content={"detail": exc.detail, "status_code": exc.status_code},
     )
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

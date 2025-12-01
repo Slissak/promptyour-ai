@@ -3,10 +3,13 @@ Database connection and session management
 """
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
 
-from app.core.config import settings
-from app.core.logging import get_logger
+from backend.app.db.base_class import Base
+from backend.app.core.config import settings
+from backend.app.core.logging import get_logger
+
+# Import all models to ensure they are registered with Base.metadata
+
 
 logger = get_logger(__name__)
 
@@ -27,11 +30,6 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
-class Base(DeclarativeBase):
-    """Base class for all database models"""
-    pass
-
-
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Database session dependency"""
     async with AsyncSessionLocal() as session:
@@ -50,7 +48,6 @@ async def create_tables():
     try:
         async with engine.begin() as conn:
             # Import all models to ensure they are registered
-            from app.models import user, conversation, analytics
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables created successfully")
     except Exception as e:

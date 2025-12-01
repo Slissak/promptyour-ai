@@ -3,7 +3,6 @@
 Test script to validate all 3 chat types are working independently
 """
 import httpx
-import json
 import asyncio
 from datetime import datetime
 
@@ -17,12 +16,11 @@ async def test_3_chat_types():
     print("=" * 80)
     print("TESTING 3 CHAT TYPES")
     print("=" * 80)
-    print(f"\nTest Question: \"{test_question}\"")
+    print(f'\nTest Question: "{test_question}"')
     print(f"Timestamp: {datetime.now().isoformat()}")
     print()
 
     async with httpx.AsyncClient(timeout=60.0) as client:
-
         # Test 1: Quick One-Liner
         print("\n" + "─" * 80)
         print("TEST 1: QUICK ONE-LINER")
@@ -32,14 +30,11 @@ async def test_3_chat_types():
         print()
 
         try:
-            quick_payload = {
-                "question": test_question
-            }
+            quick_payload = {"question": test_question}
 
-            print(f"Sending request...")
+            print("Sending request...")
             quick_response = await client.post(
-                f"{base_url}/api/v1/chat/quick",
-                json=quick_payload
+                f"{base_url}/api/v1/chat/quick", json=quick_payload
             )
 
             if quick_response.status_code == 200:
@@ -49,11 +44,13 @@ async def test_3_chat_types():
                 print(f"✅ Provider: {quick_data['provider']}")
                 print(f"✅ Cost: ${quick_data['cost']:.6f}")
                 print(f"✅ Response Time: {quick_data['response_time_ms']}ms")
-                print(f"✅ System Prompt Length: {len(quick_data['system_prompt'])} chars")
+                print(
+                    f"✅ System Prompt Length: {len(quick_data['system_prompt'])} chars"
+                )
                 print(f"✅ Response Length: {len(quick_data['content'])} chars")
-                print(f"\n📝 System Prompt Preview:")
+                print("\n📝 System Prompt Preview:")
                 print(f"   {quick_data['system_prompt'][:200]}...")
-                print(f"\n💬 Response Preview:")
+                print("\n💬 Response Preview:")
                 print(f"   {quick_data['content'][:300]}...")
             else:
                 print(f"❌ Failed: {quick_response.status_code}")
@@ -70,14 +67,11 @@ async def test_3_chat_types():
         print()
 
         try:
-            raw_payload = {
-                "question": test_question
-            }
+            raw_payload = {"question": test_question}
 
-            print(f"Sending request...")
+            print("Sending request...")
             raw_response = await client.post(
-                f"{base_url}/api/v1/chat/raw",
-                json=raw_payload
+                f"{base_url}/api/v1/chat/raw", json=raw_payload
             )
 
             if raw_response.status_code == 200:
@@ -87,15 +81,17 @@ async def test_3_chat_types():
                 print(f"✅ Provider: {raw_data['provider']}")
                 print(f"✅ Cost: ${raw_data['cost']:.6f}")
                 print(f"✅ Response Time: {raw_data['response_time_ms']}ms")
-                print(f"✅ System Prompt Length: {len(raw_data['system_prompt'])} chars (should be 0)")
+                print(
+                    f"✅ System Prompt Length: {len(raw_data['system_prompt'])} chars (should be 0)"
+                )
                 print(f"✅ Response Length: {len(raw_data['content'])} chars")
 
-                if len(raw_data['system_prompt']) == 0:
-                    print(f"✅ VERIFIED: System prompt is empty (truly RAW)")
+                if len(raw_data["system_prompt"]) == 0:
+                    print("✅ VERIFIED: System prompt is empty (truly RAW)")
                 else:
-                    print(f"⚠️  WARNING: System prompt is NOT empty!")
+                    print("⚠️  WARNING: System prompt is NOT empty!")
 
-                print(f"\n💬 RAW Response Preview:")
+                print("\n💬 RAW Response Preview:")
                 print(f"   {raw_data['content'][:300]}...")
             else:
                 print(f"❌ Failed: {raw_response.status_code}")
@@ -116,13 +112,12 @@ async def test_3_chat_types():
                 "question": test_question,
                 "theme": "general_questions",
                 "audience": "adults",
-                "response_style": "structured_detailed"
+                "response_style": "structured_detailed",
             }
 
-            print(f"Sending request...")
+            print("Sending request...")
             enhanced_response = await client.post(
-                f"{base_url}/api/v1/chat/message",
-                json=enhanced_payload
+                f"{base_url}/api/v1/chat/message", json=enhanced_payload
             )
 
             if enhanced_response.status_code == 200:
@@ -132,16 +127,20 @@ async def test_3_chat_types():
                 print(f"✅ Provider: {enhanced_data['provider']}")
                 print(f"✅ Cost: ${enhanced_data['cost']:.6f}")
                 print(f"✅ Response Time: {enhanced_data['response_time_ms']}ms")
-                print(f"✅ System Prompt Length: {len(enhanced_data['system_prompt'])} chars")
+                print(
+                    f"✅ System Prompt Length: {len(enhanced_data['system_prompt'])} chars"
+                )
                 print(f"✅ Response Length: {len(enhanced_data['content'])} chars")
                 print(f"✅ Reasoning: {enhanced_data['reasoning']}")
 
-                if 'raw_response' in enhanced_data and enhanced_data['raw_response']:
-                    print(f"✅ Includes RAW comparison: Yes ({len(enhanced_data['raw_response'])} chars)")
+                if "raw_response" in enhanced_data and enhanced_data["raw_response"]:
+                    print(
+                        f"✅ Includes RAW comparison: Yes ({len(enhanced_data['raw_response'])} chars)"
+                    )
 
-                print(f"\n📝 Enhanced System Prompt Preview:")
+                print("\n📝 Enhanced System Prompt Preview:")
                 print(f"   {enhanced_data['system_prompt'][:200]}...")
-                print(f"\n💬 Enhanced Response Preview:")
+                print("\n💬 Enhanced Response Preview:")
                 print(f"   {enhanced_data['content'][:300]}...")
             else:
                 print(f"❌ Failed: {enhanced_response.status_code}")
