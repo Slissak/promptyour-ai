@@ -9,6 +9,8 @@ interface ComparisonViewProps {
     model: string;
     provider: string;
     systemPrompt: string;
+    tokensUsed?: number;
+    cost?: number;
   };
   enhancedResponse: {
     content: string;
@@ -17,6 +19,8 @@ interface ComparisonViewProps {
     systemPrompt: string;
     theme?: string;
     audience?: string;
+    tokensUsed?: number;
+    cost?: number;
   };
 }
 
@@ -126,6 +130,16 @@ export function ComparisonView({ quickResponse, enhancedResponse }: ComparisonVi
       <div className="mt-4 pt-3 border-t border-gray-300 text-xs text-gray-600 text-center">
         <span className="font-medium">💡 Tip:</span> The RAW response has NO system prompt or guidance - just the model's natural answer. Compare it to the enhanced version to see the power of prompt engineering!
       </div>
+
+      {/* Token Comparison */}
+      {(enhancedResponse.tokensUsed !== undefined && quickResponse.tokensUsed !== undefined) && (
+        <div className="mt-2 text-xs text-center font-mono text-gray-700">
+          📊 Token Usage: <span className="text-red-600 font-semibold">RAW: {quickResponse.tokensUsed}</span> vs <span className="text-green-600 font-semibold">Enhanced: {enhancedResponse.tokensUsed}</span>
+          <span className="text-gray-500 ml-1">
+            ({enhancedResponse.tokensUsed > quickResponse.tokensUsed ? '+' : ''}{enhancedResponse.tokensUsed - quickResponse.tokensUsed})
+          </span>
+        </div>
+      )}
     </div>
   );
 }

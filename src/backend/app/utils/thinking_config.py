@@ -16,16 +16,12 @@ logger = logging.getLogger(__name__)
 # Models that support extended thinking/reasoning
 THINKING_CAPABLE_MODELS = {
     # Anthropic models (via OpenRouter use 'reasoning' parameter)
-    "claude-sonnet-4": {"type": "anthropic", "default_tokens": 8000},
-    "claude-opus-4": {"type": "anthropic", "default_tokens": 10000},
-    "claude-3.7-sonnet": {"type": "anthropic", "default_tokens": 8000},
-    "claude-3-7-sonnet": {"type": "anthropic", "default_tokens": 8000},
-
+    "claude-3-opus": {"type": "anthropic", "default_tokens": 10000},
+    "claude-3-sonnet": {"type": "anthropic", "default_tokens": 8000},
     # OpenAI reasoning models (via OpenRouter use 'reasoning' parameter)
     "o3-mini": {"type": "openai", "default_effort": "high"},
     "o1": {"type": "openai", "default_effort": "high"},
     "o1-mini": {"type": "openai", "default_effort": "medium"},
-
     # DeepSeek reasoning models (via OpenRouter use 'reasoning' parameter)
     "deepseek-r1": {"type": "deepseek", "default_effort": "high"},
     "deepseek-r1-distill": {"type": "deepseek", "default_effort": "medium"},
@@ -57,7 +53,7 @@ def get_thinking_config(
     model: str,
     enable_reasoning: bool = False,
     reasoning_effort: Optional[str] = None,
-    reasoning_budget_tokens: Optional[int] = None
+    reasoning_budget_tokens: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Get the appropriate reasoning configuration for a model.
@@ -99,18 +95,24 @@ def get_thinking_config(
         # Anthropic models use max_tokens
         tokens = reasoning_budget_tokens or model_config.get("default_tokens", 8000)
         reasoning_config["max_tokens"] = tokens
-        logger.info(f"Enabling reasoning for Anthropic model {model} with {tokens} tokens")
+        logger.info(
+            f"Enabling reasoning for Anthropic model {model} with {tokens} tokens"
+        )
 
     elif model_config["type"] in ["openai", "deepseek"]:
         # OpenAI and DeepSeek use effort levels
         effort = reasoning_effort or model_config.get("default_effort", "high")
         reasoning_config["effort"] = effort
-        logger.info(f"Enabling reasoning for {model_config['type']} model {model} with effort={effort}")
+        logger.info(
+            f"Enabling reasoning for {model_config['type']} model {model} with effort={effort}"
+        )
 
     return reasoning_config
 
 
-def get_recommended_reasoning_params(model: str, mode: str = "enhanced") -> Dict[str, Any]:
+def get_recommended_reasoning_params(
+    model: str, mode: str = "enhanced"
+) -> Dict[str, Any]:
     """
     Get recommended reasoning parameters for a model based on the chat mode.
 
@@ -126,7 +128,7 @@ def get_recommended_reasoning_params(model: str, mode: str = "enhanced") -> Dict
         return {
             "enable_reasoning": False,
             "reasoning_effort": None,
-            "reasoning_budget_tokens": None
+            "reasoning_budget_tokens": None,
         }
 
     elif mode == "enhanced":
@@ -135,7 +137,7 @@ def get_recommended_reasoning_params(model: str, mode: str = "enhanced") -> Dict
             return {
                 "enable_reasoning": False,
                 "reasoning_effort": None,
-                "reasoning_budget_tokens": None
+                "reasoning_budget_tokens": None,
             }
 
         # Extract model name
@@ -148,25 +150,25 @@ def get_recommended_reasoning_params(model: str, mode: str = "enhanced") -> Dict
                     return {
                         "enable_reasoning": True,
                         "reasoning_effort": None,
-                        "reasoning_budget_tokens": config.get("default_tokens", 8000)
+                        "reasoning_budget_tokens": config.get("default_tokens", 8000),
                     }
                 else:  # OpenAI or DeepSeek
                     return {
                         "enable_reasoning": True,
                         "reasoning_effort": config.get("default_effort", "high"),
-                        "reasoning_budget_tokens": None
+                        "reasoning_budget_tokens": None,
                     }
 
         # Default if not found
         return {
             "enable_reasoning": False,
             "reasoning_effort": None,
-            "reasoning_budget_tokens": None
+            "reasoning_budget_tokens": None,
         }
 
     # Default: no reasoning
     return {
         "enable_reasoning": False,
         "reasoning_effort": None,
-        "reasoning_budget_tokens": None
+        "reasoning_budget_tokens": None,
     }

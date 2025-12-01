@@ -8,12 +8,12 @@ from typing import Dict, Any
 import structlog
 from structlog.stdlib import LoggerFactory
 
-from app.core.config import settings
+from backend.app.core.config import settings
 
 
 def setup_logging():
     """Configure structured logging"""
-    
+
     # Configure structlog
     structlog.configure(
         processors=[
@@ -25,20 +25,20 @@ def setup_logging():
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer()
+            structlog.processors.JSONRenderer(),
         ],
         context_class=dict,
         logger_factory=LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, settings.LOG_LEVEL.upper()),
     )
-    
+
     # Reduce noise from external libraries
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -69,5 +69,5 @@ def log_error(error: Exception, context: Dict[str, Any] = None):
         "Application error",
         error=str(error),
         error_type=type(error).__name__,
-        context=context or {}
+        context=context or {},
     )

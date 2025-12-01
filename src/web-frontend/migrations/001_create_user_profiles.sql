@@ -60,8 +60,8 @@ BEGIN
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
-    NEW.raw_user_meta_data->>'avatar_url'
+    NEW.email,
+    NULL
   );
   RETURN NEW;
 END;

@@ -33,7 +33,7 @@ def find_model_pricing(models, model_id):
             return {
                 "prompt_cost_per_1k": float(pricing.get("prompt", "0")) * 1000,
                 "completion_cost_per_1k": float(pricing.get("completion", "0")) * 1000,
-                "context_length": model.get("context_length", 0)
+                "context_length": model.get("context_length", 0),
             }
     return None
 

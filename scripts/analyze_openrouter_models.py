@@ -92,7 +92,9 @@ def is_suitable_for_quick_mode(model: Dict) -> bool:
         return False
 
     # Skip audio/image generation models
-    if any(x in model_id.lower() for x in ["whisper", "dall-e", "stable-diffusion", "flux"]):
+    if any(
+        x in model_id.lower() for x in ["whisper", "dall-e", "stable-diffusion", "flux"]
+    ):
         return False
 
     return True
@@ -132,7 +134,11 @@ async def main():
     suitable_models.sort(key=lambda m: m["estimated_quick_cost"])
 
     # Separate free and paid models
-    free_models = [m for m in suitable_models if m["estimated_quick_cost"] == 0.0 and ":free" in m.get("id", "")]
+    free_models = [
+        m
+        for m in suitable_models
+        if m["estimated_quick_cost"] == 0.0 and ":free" in m.get("id", "")
+    ]
     paid_models = [m for m in suitable_models if m["estimated_quick_cost"] > 0.0]
 
     # Display top 15 free models
@@ -156,7 +162,9 @@ async def main():
     print("TOP 20 CHEAPEST PAID MODELS FOR QUICK MODE")
     print("=" * 120)
     print()
-    print(f"{'Rank':<5} {'Model ID':<50} {'Prompt/1K':<15} {'Compl/1K':<15} {'Est Cost':<15} {'Context':<15}")
+    print(
+        f"{'Rank':<5} {'Model ID':<50} {'Prompt/1K':<15} {'Compl/1K':<15} {'Est Cost':<15} {'Context':<15}"
+    )
     print("-" * 120)
 
     top_paid = paid_models[:20]
@@ -169,7 +177,9 @@ async def main():
         completion_cost = float(pricing.get("completion", "0")) * 1000
         est_cost = model["estimated_quick_cost"]
 
-        print(f"{i:<5} {model_id:<50} ${prompt_cost:.6f}     ${completion_cost:.6f}     ${est_cost:.6f}      {context:,}")
+        print(
+            f"{i:<5} {model_id:<50} ${prompt_cost:.6f}     ${completion_cost:.6f}     ${est_cost:.6f}      {context:,}"
+        )
 
     # Combined top models for downstream processing
     top_models = suitable_models[:30]
@@ -184,14 +194,18 @@ async def main():
     recommendations = []
 
     # Best FREE model (from reputable provider)
-    reputable_providers = ["deepseek", "meta-llama", "google", "mistralai", "nvidia", "qwen"]
+    reputable_providers = [
+        "deepseek",
+        "meta-llama",
+        "google",
+        "mistralai",
+        "nvidia",
+        "qwen",
+    ]
     for model in free_models[:10]:
         model_id = model.get("id", "").lower()
         if any(provider in model_id for provider in reputable_providers):
-            recommendations.append({
-                "rank": "🆓 BEST FREE (RELIABLE)",
-                "model": model
-            })
+            recommendations.append({"rank": "🆓 BEST FREE (RELIABLE)", "model": model})
             break
 
     # Best PAID model from reputable provider
@@ -199,29 +213,22 @@ async def main():
     for model in paid_models[:20]:
         model_id = model.get("id", "").lower()
         if any(provider in model_id for provider in paid_reputable):
-            recommendations.append({
-                "rank": "💰 CHEAPEST PAID (RELIABLE)",
-                "model": model
-            })
+            recommendations.append(
+                {"rank": "💰 CHEAPEST PAID (RELIABLE)", "model": model}
+            )
             break
 
     # Find Anthropic model (high quality) in paid
     for model in paid_models[:30]:
         if "anthropic" in model.get("id", "").lower():
-            recommendations.append({
-                "rank": "🎯 ANTHROPIC (PREMIUM)",
-                "model": model
-            })
+            recommendations.append({"rank": "🎯 ANTHROPIC (PREMIUM)", "model": model})
             break
 
     # Find OpenAI GPT model in paid
     for model in paid_models[:30]:
         model_id = model.get("id", "").lower()
         if "openai" in model_id and "gpt" in model_id:
-            recommendations.append({
-                "rank": "🤖 OPENAI GPT (PREMIUM)",
-                "model": model
-            })
+            recommendations.append({"rank": "🤖 OPENAI GPT (PREMIUM)", "model": model})
             break
 
     # Display recommendations
@@ -239,8 +246,12 @@ async def main():
         print(f"{rec['rank']}")
         print(f"  Model ID: {model_id}")
         print(f"  Name: {name}")
-        print(f"  Pricing: ${prompt_cost:.6f}/1K prompt, ${completion_cost:.6f}/1K completion")
-        print(f"  Estimated cost per quick response (50 prompt + 100 completion tokens): ${est_cost:.6f}")
+        print(
+            f"  Pricing: ${prompt_cost:.6f}/1K prompt, ${completion_cost:.6f}/1K completion"
+        )
+        print(
+            f"  Estimated cost per quick response (50 prompt + 100 completion tokens): ${est_cost:.6f}"
+        )
         print(f"  Context length: {context:,} tokens")
         print()
 
@@ -254,10 +265,14 @@ async def main():
                 "rank": i + 1,
                 "id": m.get("id"),
                 "name": m.get("name"),
-                "prompt_cost_per_1k": float(m.get("pricing", {}).get("prompt", "0")) * 1000,
-                "completion_cost_per_1k": float(m.get("pricing", {}).get("completion", "0")) * 1000,
+                "prompt_cost_per_1k": float(m.get("pricing", {}).get("prompt", "0"))
+                * 1000,
+                "completion_cost_per_1k": float(
+                    m.get("pricing", {}).get("completion", "0")
+                )
+                * 1000,
                 "estimated_quick_cost": m["estimated_quick_cost"],
-                "context_length": m.get("context_length")
+                "context_length": m.get("context_length"),
             }
             for i, m in enumerate(top_models[:30])
         ],
@@ -266,10 +281,10 @@ async def main():
                 "category": rec["rank"],
                 "id": rec["model"].get("id"),
                 "name": rec["model"].get("name"),
-                "estimated_quick_cost": rec["model"]["estimated_quick_cost"]
+                "estimated_quick_cost": rec["model"]["estimated_quick_cost"],
             }
             for rec in recommendations
-        ]
+        ],
     }
 
     output_file = "openrouter_models_analysis.json"

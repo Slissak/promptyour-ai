@@ -25,6 +25,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-select": "^2.2.6",
     "@sentry/nextjs": "^10.19.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.75.0",
     "@types/node": "^24.5.2",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.13",
-    "@types/react-dom": "^19.1.9"
+    "@types/react-dom": "^19.1.9",
+    "yaml": "^2.8.1"
   }
 }

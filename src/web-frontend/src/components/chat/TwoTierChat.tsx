@@ -2,14 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { PromptYourAIClient } from '@shared/api/client';
-import { getConversationManager } from '@shared/utils/conversation';
-import type { QuickInput, QuickResponse, UserInput, ChatResponse, ChatMessage, ThemeType, AudienceType, ResponseStyle } from '@shared/types/api';
-import { MessageRole } from '@shared/types/api';
+import { PromptYourAIClient } from '@/shared/api/client';
+import { getConversationManager } from '@/shared/utils/conversation';
+import type { QuickInput, QuickResponse, UserInput, ChatResponse, ChatMessage, ThemeType, AudienceType, ResponseStyle } from '@/shared/types/api';
+import { MessageRole } from '@/shared/types/api';
 import { ChatMessageDisplay } from './ChatMessageDisplay';
 import { ComparisonView } from './ComparisonView';
 import { InlineEnhancedConfig } from './InlineEnhancedConfig';
 import { useUserMode } from '@/hooks/useUserMode';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { THEMES, AUDIENCES, RESPONSE_STYLES } from '@/config/generated-options';
 
 interface TwoTierChatProps {
@@ -18,7 +19,7 @@ interface TwoTierChatProps {
 
 export function TwoTierChat({ locale }: TwoTierChatProps) {
   const t = useTranslations();
-  const { isAdvancedMode } = useUserMode();
+  const { isAdvancedMode, setUserMode } = useUserMode();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,10 +41,39 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   const clientRef = useRef<PromptYourAIClient | null>(null);
   const conversationManagerRef = useRef(getConversationManager());
 
-  // Initialize API client
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Track current mode in a ref to avoid closure issues in async functions
+  const isAdvancedModeRef = useRef(isAdvancedMode);
+
+  // Update ref whenever mode changes
   useEffect(() => {
-    clientRef.current = new PromptYourAIClient({ baseURL: 'http://localhost:8001' });
-  }, []);
+    isAdvancedModeRef.current = isAdvancedMode;
+  }, [isAdvancedMode]);
+
+  const supabase = useSupabaseClient();
+
+  // Initialize API client and handle user session
+  useEffect(() => {
+    const initialize = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const loggedIn = !!session;
+      setIsLoggedIn(loggedIn);
+
+      if (!loggedIn) {
+        // For anonymous users, clear any previous conversations
+        conversationManagerRef.current.clearAllConversations();
+      }
+
+      const token = session?.access_token;
+      clientRef.current = new PromptYourAIClient({
+        baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+        token: token,
+      });
+      console.log('PromptYourAIClient initialized');
+    };
+    initialize();
+  }, [supabase]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,6 +84,8 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   }, [messages]);
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
+    console.log('handleSubmitQuestion called');
+    console.log('clientRef.current:', clientRef.current);
     e.preventDefault();
     if (!input.trim() || !clientRef.current) return;
 
@@ -183,16 +215,19 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
 
       const enhancedResponse = await clientRef.current.sendEnhancedMessage(enhancedInput);
 
+      // Re-check mode AFTER async operation (user might have toggled during request)
+      const modeAfterRequest = isAdvancedModeRef.current;
+
       // Debug: Log the enhanced response to check raw_response
       console.log('Enhanced Response received:', {
         hasRawResponse: !!enhancedResponse.raw_response,
         rawResponseLength: enhancedResponse.raw_response?.length || 0,
         rawResponsePreview: enhancedResponse.raw_response?.substring(0, 100) || 'EMPTY',
         enhancedContentLength: enhancedResponse.content?.length || 0,
-        mode: isAdvancedMode ? 'advanced' : 'regular'
+        mode: modeAfterRequest ? 'advanced' : 'regular'
       });
 
-      if (isAdvancedMode) {
+      if (modeAfterRequest) {
         // ADVANCED MODE: Show comparison view (RAW vs Enhanced)
         const comparisonMessage: ChatMessage = {
           id: (Date.now() + 2).toString(),
@@ -209,7 +244,8 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
               model_used: enhancedResponse.model_used,
               provider: enhancedResponse.provider,
               message_id: enhancedResponse.message_id + '_raw',
-              cost: 0,
+              cost: enhancedResponse.raw_cost || 0,
+              tokensUsed: enhancedResponse.raw_tokens_used || 0,
               response_time_ms: 0,
               system_prompt: ''  // Empty - completely RAW
             },
@@ -288,7 +324,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isAdvancedMode ? 'bg-slate-50' : 'bg-white'}`}>
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 mt-16">
             <div className="text-6xl mb-4">💬</div>
@@ -307,7 +343,9 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
                       content: message.metadata.quickResponse.content,
                       model: message.metadata.quickResponse.model_used,
                       provider: message.metadata.quickResponse.provider,
-                      systemPrompt: message.metadata.quickResponse.system_prompt
+                      systemPrompt: message.metadata.quickResponse.system_prompt,
+                      tokensUsed: message.metadata.quickResponse.tokensUsed,
+                      cost: message.metadata.quickResponse.cost
                     }}
                     enhancedResponse={{
                       content: message.metadata.enhancedResponse.content,
@@ -315,7 +353,9 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
                       provider: message.metadata.enhancedResponse.provider,
                       systemPrompt: message.metadata.enhancedResponse.system_prompt,
                       theme: message.metadata.theme,
-                      audience: message.metadata.audience
+                      audience: message.metadata.audience,
+                      tokensUsed: message.metadata.enhancedResponse.tokens_used,
+                      cost: message.metadata.enhancedResponse.cost
                     }}
                   />
                 );

@@ -25,10 +25,26 @@ def test_new_command_demonstration():
 
     # Simulate user has sent messages and received responses
     chat.message_history = [
-        {"role": "user", "content": "What is Python?", "timestamp": "2024-01-01T10:00:00"},
-        {"role": "assistant", "content": "Python is a high-level programming language.", "timestamp": "2024-01-01T10:00:05"},
-        {"role": "user", "content": "How do I use loops?", "timestamp": "2024-01-01T10:01:00"},
-        {"role": "assistant", "content": "You can use for loops and while loops in Python.", "timestamp": "2024-01-01T10:01:05"}
+        {
+            "role": "user",
+            "content": "What is Python?",
+            "timestamp": "2024-01-01T10:00:00",
+        },
+        {
+            "role": "assistant",
+            "content": "Python is a high-level programming language.",
+            "timestamp": "2024-01-01T10:00:05",
+        },
+        {
+            "role": "user",
+            "content": "How do I use loops?",
+            "timestamp": "2024-01-01T10:01:00",
+        },
+        {
+            "role": "assistant",
+            "content": "You can use for loops and while loops in Python.",
+            "timestamp": "2024-01-01T10:01:05",
+        },
     ]
     chat.first_message_sent = True
     chat.conversation_theme = "coding_programming"
@@ -53,8 +69,10 @@ def test_new_command_demonstration():
     # Display conversation history
     print("Current conversation history:")
     for i, msg in enumerate(chat.message_history, 1):
-        role = msg['role'].upper()
-        content = msg['content'][:50] + "..." if len(msg['content']) > 50 else msg['content']
+        role = msg["role"].upper()
+        content = (
+            msg["content"][:50] + "..." if len(msg["content"]) > 50 else msg["content"]
+        )
         print(f"  {i}. [{role}] {content}")
     print()
 
@@ -71,16 +89,52 @@ def test_new_command_demonstration():
 
     # Check all state variables
     checks = [
-        ("Conversation ID changed", chat.conversation_id != original_conversation_id, f"New ID: {chat.conversation_id}"),
-        ("Message history cleared", len(chat.message_history) == 0, f"Messages: {len(chat.message_history)}"),
-        ("Theme reset", chat.conversation_theme is None, f"Theme: {chat.conversation_theme}"),
-        ("Audience reset", chat.conversation_audience is None, f"Audience: {chat.conversation_audience}"),
-        ("Response Style reset", chat.conversation_response_style is None, f"Style: {chat.conversation_response_style}"),
-        ("Context reset", chat.conversation_context is None, f"Context: {chat.conversation_context}"),
+        (
+            "Conversation ID changed",
+            chat.conversation_id != original_conversation_id,
+            f"New ID: {chat.conversation_id}",
+        ),
+        (
+            "Message history cleared",
+            len(chat.message_history) == 0,
+            f"Messages: {len(chat.message_history)}",
+        ),
+        (
+            "Theme reset",
+            chat.conversation_theme is None,
+            f"Theme: {chat.conversation_theme}",
+        ),
+        (
+            "Audience reset",
+            chat.conversation_audience is None,
+            f"Audience: {chat.conversation_audience}",
+        ),
+        (
+            "Response Style reset",
+            chat.conversation_response_style is None,
+            f"Style: {chat.conversation_response_style}",
+        ),
+        (
+            "Context reset",
+            chat.conversation_context is None,
+            f"Context: {chat.conversation_context}",
+        ),
         ("Model reset", chat.chosen_model is None, f"Model: {chat.chosen_model}"),
-        ("Provider reset", chat.chosen_provider is None, f"Provider: {chat.chosen_provider}"),
-        ("First message flag reset", chat.first_message_sent is False, f"Flag: {chat.first_message_sent}"),
-        ("Session messages cleared", len(chat.session_messages) == 0, f"Sessions: {len(chat.session_messages)}")
+        (
+            "Provider reset",
+            chat.chosen_provider is None,
+            f"Provider: {chat.chosen_provider}",
+        ),
+        (
+            "First message flag reset",
+            chat.first_message_sent is False,
+            f"Flag: {chat.first_message_sent}",
+        ),
+        (
+            "Session messages cleared",
+            len(chat.session_messages) == 0,
+            f"Sessions: {len(chat.session_messages)}",
+        ),
     ]
 
     all_passed = True

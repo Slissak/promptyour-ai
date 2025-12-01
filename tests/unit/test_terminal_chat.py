@@ -10,7 +10,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from terminal_chat import TerminalChat
+from terminal_chat import TerminalChat  # noqa: E402
 
 
 class TestTerminalChatStateReset:
@@ -22,7 +22,7 @@ class TestTerminalChatStateReset:
 
         assert chat.message_history == []
         assert chat.session_messages == []
-        assert chat.first_message_sent == False
+        assert chat.first_message_sent is False
         assert chat.conversation_theme is None
         assert chat.conversation_audience is None
         assert chat.conversation_response_style is None
@@ -39,7 +39,7 @@ class TestTerminalChatStateReset:
         original_conversation_id = chat.conversation_id
         chat.message_history = [
             {"role": "user", "content": "First question"},
-            {"role": "assistant", "content": "First answer"}
+            {"role": "assistant", "content": "First answer"},
         ]
         chat.session_messages = [{"some": "data"}]
         chat.first_message_sent = True
@@ -56,14 +56,20 @@ class TestTerminalChatStateReset:
         # Verify all state is reset
         assert chat.message_history == [], "message_history should be empty"
         assert chat.session_messages == [], "session_messages should be empty"
-        assert chat.first_message_sent == False, "first_message_sent should be False"
+        assert chat.first_message_sent is False, "first_message_sent should be False"
         assert chat.conversation_theme is None, "conversation_theme should be None"
-        assert chat.conversation_audience is None, "conversation_audience should be None"
-        assert chat.conversation_response_style is None, "conversation_response_style should be None"
+        assert (
+            chat.conversation_audience is None
+        ), "conversation_audience should be None"
+        assert (
+            chat.conversation_response_style is None
+        ), "conversation_response_style should be None"
         assert chat.conversation_context is None, "conversation_context should be None"
         assert chat.chosen_model is None, "chosen_model should be None"
         assert chat.chosen_provider is None, "chosen_provider should be None"
-        assert chat.conversation_id != original_conversation_id, "conversation_id should be different"
+        assert (
+            chat.conversation_id != original_conversation_id
+        ), "conversation_id should be different"
 
     def test_start_new_chat_generates_new_conversation_id(self):
         """Test that start_new_chat() generates a unique conversation ID"""
@@ -81,7 +87,9 @@ class TestTerminalChatStateReset:
 
         # IDs should follow expected format
         for conv_id in conversation_ids:
-            assert conv_id.startswith("conv_"), "Conversation ID should start with 'conv_'"
+            assert conv_id.startswith(
+                "conv_"
+            ), "Conversation ID should start with 'conv_'"
             assert len(conv_id) == 13, "Conversation ID should be 'conv_' + 8 hex chars"
 
     def test_message_history_isolation_between_sessions(self):
@@ -93,7 +101,7 @@ class TestTerminalChatStateReset:
             {"role": "user", "content": "Question 1"},
             {"role": "assistant", "content": "Answer 1"},
             {"role": "user", "content": "Question 2"},
-            {"role": "assistant", "content": "Answer 2"}
+            {"role": "assistant", "content": "Answer 2"},
         ]
 
         first_session_history = chat.message_history.copy()
@@ -105,7 +113,7 @@ class TestTerminalChatStateReset:
         # Add new messages to second conversation
         chat.message_history = [
             {"role": "user", "content": "New question"},
-            {"role": "assistant", "content": "New answer"}
+            {"role": "assistant", "content": "New answer"},
         ]
 
         second_session_history = chat.message_history.copy()
@@ -163,7 +171,7 @@ class TestTerminalChatConfiguration:
             "research_analysis",
             "problem_solving",
             "tutoring_education",
-            "general_questions"
+            "general_questions",
         ]
 
         assert chat.themes == expected_themes
@@ -178,7 +186,7 @@ class TestTerminalChatConfiguration:
             "adults",
             "university_level",
             "professionals",
-            "seniors"
+            "seniors",
         ]
 
         assert chat.audiences == expected_audiences
@@ -191,7 +199,7 @@ class TestTerminalChatConfiguration:
             "paragraph_brief",
             "structured_detailed",
             "instructions_only",
-            "comprehensive"
+            "comprehensive",
         ]
 
         assert chat.response_styles == expected_styles

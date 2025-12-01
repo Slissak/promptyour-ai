@@ -20,19 +20,27 @@ try:
     from rich.table import Table
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.markdown import Markdown
-    from rich.text import Text
-    from rich import print as rprint
+    from supabase import create_client, Client
+
 except ImportError as e:
-    print(f"Missing required packages. Please install them:")
-    print(f"pip install httpx websockets rich")
+    print("Missing required packages. Please install them:")
+    print("pip install httpx websockets rich supabase")
     print(f"Error: {e}")
     sys.exit(1)
 
 
 class TerminalChat:
     """Terminal-based chat interface for the PromptYour.AI backend"""
-    
-    def __init__(self, api_base: str = "http://localhost:8000", use_websocket: bool = True, debug: bool = False, quick_mode: bool = False):
+
+    def __init__(
+        self,
+        api_base: str = "http://localhost:8000",
+        supabase_url: str = None,
+        supabase_key: str = None,
+        use_websocket: bool = True,
+        debug: bool = False,
+        quick_mode: bool = False,
+    ):
         self.api_base = api_base
         self.use_websocket = use_websocket
         self.debug = debug
@@ -49,38 +57,40 @@ class TerminalChat:
         self.message_history = []
         self.chosen_model = None
         self.chosen_provider = None
-        
+        self.supabase_client: Client = create_client(supabase_url, supabase_key) if supabase_url and supabase_key else None
+        self.token: str = None
+
         # Available themes
         self.themes = [
             "academic_help",
-            "creative_writing", 
+            "creative_writing",
             "coding_programming",
             "business_professional",
             "personal_learning",
             "research_analysis",
             "problem_solving",
             "tutoring_education",
-            "general_questions"
+            "general_questions",
         ]
-        
+
         # Available audiences
         self.audiences = [
-            "small_kids",        # Ages 5-10
-            "teenagers",         # Ages 11-17
-            "adults",            # Ages 18-65
+            "small_kids",  # Ages 5-10
+            "teenagers",  # Ages 11-17
+            "adults",  # Ages 18-65
             "university_level",  # College/University students and graduates
-            "professionals",     # Industry professionals and experts
-            "seniors"            # Ages 65+
+            "professionals",  # Industry professionals and experts
+            "seniors",  # Ages 65+
         ]
 
         # Available response styles
         self.response_styles = [
-            "paragraph_brief",       # Concise, one paragraph response
-            "structured_detailed",   # Organized with clear sections and examples
-            "instructions_only",     # Direct actions without background
-            "comprehensive"          # Full explanation with background and reasoning
+            "paragraph_brief",  # Concise, one paragraph response
+            "structured_detailed",  # Organized with clear sections and examples
+            "instructions_only",  # Direct actions without background
+            "comprehensive",  # Full explanation with background and reasoning
         ]
-    
+
     def display_banner(self):
         """Display welcome banner"""
         banner = """
@@ -92,20 +102,49 @@ class TerminalChat:
 ╚═══════════════════════════════════════════════════════════╝
         """
         self.console.print(banner, style="bold blue")
-        
+
         # Show connection status
         self.console.print(f"🔗 Connected to: {self.api_base}", style="dim")
         self.console.print(f"👤 User ID: {self.user_id}", style="dim")
         self.console.print(f"💬 Session: {self.conversation_id}", style="dim")
         if self.debug:
-            self.console.print("🐛 Debug Mode: Will show Quick + Enhanced + RAW comparison", style="yellow")
+            self.console.print(
+                "🐛 Debug Mode: Will show Quick + Enhanced + RAW comparison",
+                style="yellow",
+            )
         else:
-            self.console.print("💬 Normal Mode: Will show Quick + Enhanced (no RAW comparison)", style="cyan")
+            self.console.print(
+                "💬 Normal Mode: Will show Quick + Enhanced (no RAW comparison)",
+                style="cyan",
+            )
         if self.quick_mode:
-            self.console.print("⚡ Quick Mode: Skipping theme and context questions", style="cyan")
+            self.console.print(
+                "⚡ Quick Mode: Skipping theme and context questions", style="cyan"
+            )
         else:
-            self.console.print("🎯 Enhanced Mode: Theme and context questions enabled for better results", style="green")
+            self.console.print(
+                "🎯 Enhanced Mode: Theme and context questions enabled for better results",
+                style="green",
+            )
         self.console.print()
+
+    async def login(self):
+        """Login to Supabase to get an authentication token."""
+        if not self.supabase_client:
+            self.console.print("Supabase client not configured. Skipping login.", style="yellow")
+            return
+
+        self.console.print("\n[bold]Login to Supabase[/bold]")
+        email = Prompt.ask("Enter your email")
+        password = Prompt.ask("Enter your password", password=True)
+
+        try:
+            response = self.supabase_client.auth.sign_in_with_password({"email": email, "password": password})
+            self.token = response.session.access_token
+            self.console.print("Login successful!", style="green")
+        except Exception as e:
+            self.console.print(f"Login failed: {e}", style="red")
+            self.token = None
 
     def start_new_chat(self):
         """Start a new chat session by resetting conversation state"""
@@ -119,9 +158,11 @@ class TerminalChat:
         self.session_messages = []
         self.chosen_model = None
         self.chosen_provider = None
-        
+
         self.console.print()
-        self.console.print("🔄 [bold green]Started new chat session![/bold green]", style="green")
+        self.console.print(
+            "🔄 [bold green]Started new chat session![/bold green]", style="green"
+        )
         self.console.print(f"💬 New Session ID: {self.conversation_id}", style="dim")
         self.console.print()
 
@@ -131,53 +172,72 @@ class TerminalChat:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 # Check basic health
                 health_response = await client.get(f"{self.api_base}/health")
-                
+
                 if health_response.status_code != 200:
-                    self.console.print(f"❌ Backend health check failed: HTTP {health_response.status_code}", style="red")
+                    self.console.print(
+                        f"❌ Backend health check failed: HTTP {health_response.status_code}",
+                        style="red",
+                    )
                     return False
-                
+
                 # Check provider status
-                providers_response = await client.get(f"{self.api_base}/api/v1/providers/status")
-                
+                providers_response = await client.get(
+                    f"{self.api_base}/api/v1/providers/status"
+                )
+
                 if providers_response.status_code == 200:
                     provider_data = providers_response.json()["data"]
                     providers = provider_data.get("providers", {})
-                    
+
                     # Create status table
-                    table = Table(title="🔌 Provider Status", show_header=True, header_style="bold magenta")
+                    table = Table(
+                        title="🔌 Provider Status",
+                        show_header=True,
+                        header_style="bold magenta",
+                    )
                     table.add_column("Provider", style="cyan", no_wrap=True)
                     table.add_column("Status", justify="center")
                     table.add_column("Details", style="dim")
-                    
+
                     for name, info in providers.items():
                         status = info.get("status", "unknown")
-                        status_style = "green" if status == "healthy" else "red" if status == "unhealthy" else "yellow"
-                        
+                        status_style = (
+                            "green"
+                            if status == "healthy"
+                            else "red"
+                            if status == "unhealthy"
+                            else "yellow"
+                        )
+
                         details = []
                         provider_type = info.get("type", "unknown")
-                        
+
                         if name == "lm_studio":
                             if info.get("loaded_model"):
                                 details.append(f"Model: {info['loaded_model']}")
                             details.append(f"Type: {provider_type}")
                         elif name == "openrouter":
                             api_key_configured = info.get("api_key_configured", False)
-                            details.append("API Key: ✅" if api_key_configured else "API Key: ❌")
+                            details.append(
+                                "API Key: ✅" if api_key_configured else "API Key: ❌"
+                            )
                             details.append(f"Type: {provider_type}")
-                        
+
                         table.add_row(
                             name.replace("_", " ").title(),
                             f"[{status_style}]{status}[/{status_style}]",
-                            " | ".join(details) if details else "—"
+                            " | ".join(details) if details else "—",
                         )
-                    
+
                     self.console.print(table)
                     self.console.print()
-                    
+
                 return True
-                
+
         except httpx.ConnectError:
-            self.console.print("❌ Cannot connect to backend. Make sure it's running!", style="red")
+            self.console.print(
+                "❌ Cannot connect to backend. Make sure it's running!", style="red"
+            )
             return False
         except Exception as e:
             self.console.print(f"❌ Error checking backend: {e}", style="red")
@@ -191,50 +251,53 @@ class TerminalChat:
                 "question": question,
                 "theme": self.conversation_theme or "general_questions",
                 "audience": self.conversation_audience or "adults",
-                "response_style": self.conversation_response_style or "structured_detailed",
+                "response_style": self.conversation_response_style
+                or "structured_detailed",
                 "context": self.conversation_context,
                 "conversation_id": self.conversation_id,
-                "message_history": self.message_history
+                "message_history": self.message_history,
             }
-            
+
             # Force use of the same model for this conversation
             if self.chosen_model and self.chosen_provider:
                 user_data["force_model"] = self.chosen_model
                 user_data["force_provider"] = self.chosen_provider
-                
+
             return user_data
-        
+
         # First message - get theme and context
         self.console.print("\n" + "─" * 60, style="dim")
-        
+
         # Show theme options
         self.console.print("\n📋 [bold]Available themes:[/bold]")
         for i, theme in enumerate(self.themes, 1):
             display_name = theme.replace("_", " ").title()
             self.console.print(f"  {i:2d}. {display_name}")
-        
+
         # Get theme selection
         while True:
             try:
                 theme_choice = Prompt.ask(
                     f"\n🎯 [bold]Choose theme[/bold] (1-{len(self.themes)}, or press Enter for general)",
                     default="9",
-                    console=self.console
+                    console=self.console,
                 )
-                
+
                 if theme_choice.strip() == "":
                     selected_theme = "general_questions"
                     break
-                
+
                 theme_idx = int(theme_choice) - 1
                 if 0 <= theme_idx < len(self.themes):
                     selected_theme = self.themes[theme_idx]
                     break
                 else:
-                    self.console.print("❌ Invalid choice. Please select 1-9.", style="red")
+                    self.console.print(
+                        "❌ Invalid choice. Please select 1-9.", style="red"
+                    )
             except ValueError:
                 self.console.print("❌ Please enter a number.", style="red")
-        
+
         # Show audience options
         self.console.print("\n👥 [bold]Available audiences:[/bold]")
         for i, audience in enumerate(self.audiences, 1):
@@ -251,16 +314,16 @@ class TerminalChat:
                 display_name += " (Industry experts)"
             elif audience == "seniors":
                 display_name += " (Ages 65+)"
-            
+
             self.console.print(f"  {i:2d}. {display_name}")
-        
+
         # Get audience selection
         while True:
             try:
                 audience_choice = Prompt.ask(
                     f"\n👥 [bold]Choose target audience[/bold] (1-{len(self.audiences)}, or press Enter for adults)",
                     default="3",
-                    console=self.console
+                    console=self.console,
                 )
 
                 if audience_choice.strip() == "":
@@ -272,7 +335,10 @@ class TerminalChat:
                     selected_audience = self.audiences[audience_idx]
                     break
                 else:
-                    self.console.print(f"❌ Invalid choice. Please select 1-{len(self.audiences)}.", style="red")
+                    self.console.print(
+                        f"❌ Invalid choice. Please select 1-{len(self.audiences)}.",
+                        style="red",
+                    )
             except ValueError:
                 self.console.print("❌ Please enter a number.", style="red")
 
@@ -282,7 +348,7 @@ class TerminalChat:
             "paragraph_brief": "Brief Paragraph - Concise, one paragraph response",
             "structured_detailed": "Structured & Detailed - Organized with clear sections and examples",
             "instructions_only": "Instructions Only - Direct actions without background",
-            "comprehensive": "Comprehensive - Full explanation with background and reasoning"
+            "comprehensive": "Comprehensive - Full explanation with background and reasoning",
         }
         for i, style in enumerate(self.response_styles, 1):
             self.console.print(f"  {i}. {style_descriptions[style]}")
@@ -293,7 +359,7 @@ class TerminalChat:
                 style_choice = Prompt.ask(
                     f"\n✨ [bold]Choose response style[/bold] (1-{len(self.response_styles)}, or press Enter for structured & detailed)",
                     default="2",
-                    console=self.console
+                    console=self.console,
                 )
 
                 if style_choice.strip() == "":
@@ -305,7 +371,10 @@ class TerminalChat:
                     selected_response_style = self.response_styles[style_idx]
                     break
                 else:
-                    self.console.print(f"❌ Invalid choice. Please select 1-{len(self.response_styles)}.", style="red")
+                    self.console.print(
+                        f"❌ Invalid choice. Please select 1-{len(self.response_styles)}.",
+                        style="red",
+                    )
             except ValueError:
                 self.console.print("❌ Please enter a number.", style="red")
 
@@ -313,9 +382,9 @@ class TerminalChat:
         context = Prompt.ask(
             "📝 [dim]Additional context or follow-up questions (optional)[/dim]",
             default="",
-            console=self.console
+            console=self.console,
         )
-        
+
         # Store for future messages
         self.conversation_theme = selected_theme
         self.conversation_audience = selected_audience
@@ -329,90 +398,115 @@ class TerminalChat:
             "response_style": selected_response_style,
             "context": context if context.strip() else None,
             "conversation_id": self.conversation_id,
-            "message_history": self.message_history
+            "message_history": self.message_history,
         }
 
     async def send_websocket_message(self, user_input: Dict[str, Any]) -> None:
         """Send message via WebSocket and handle real-time responses"""
         uri = f"ws://localhost:8000/api/v1/ws/chat?user_id={self.user_id}&conversation_id={self.conversation_id}"
-        
+        if self.token:
+            uri += f"&token={self.token}"
+
         try:
             async with websockets.connect(uri) as websocket:
                 # Skip welcome message
                 await websocket.recv()
-                
+
                 # Debug: Print message history being sent
                 if self.debug:
                     if user_input.get("message_history"):
-                        self.console.print(f"\n[dim]🔍 Debug: Sending {len(user_input['message_history'])} messages in history[/dim]")
-                        for i, msg in enumerate(user_input["message_history"][-2:]):  # Show last 2 messages
+                        self.console.print(
+                            f"\n[dim]🔍 Debug: Sending {len(user_input['message_history'])} messages in history[/dim]"
+                        )
+                        for i, msg in enumerate(
+                            user_input["message_history"][-2:]
+                        ):  # Show last 2 messages
                             role_emoji = "👤" if msg.get("role") == "user" else "🤖"
-                            content_preview = msg.get("content", "")[:50] + "..." if len(msg.get("content", "")) > 50 else msg.get("content", "")
-                            self.console.print(f"[dim]  {i+1}. {role_emoji} {msg.get('role', 'unknown')}: {content_preview}[/dim]")
+                            content_preview = (
+                                msg.get("content", "")[:50] + "..."
+                                if len(msg.get("content", "")) > 50
+                                else msg.get("content", "")
+                            )
+                            self.console.print(
+                                f"[dim]  {i+1}. {role_emoji} {msg.get('role', 'unknown')}: {content_preview}[/dim]"
+                            )
                     else:
-                        self.console.print(f"\n[dim]🔍 Debug: No message history being sent (this is normal for first message)[/dim]")
+                        self.console.print(
+                            "\n[dim]🔍 Debug: No message history being sent (this is normal for first message)[/dim]"
+                        )
 
                 # Send chat request
                 message = {
                     "type": "chat_request",
                     "data": user_input,
-                    "debug": self.debug
+                    "debug": self.debug,
                 }
-                
+
                 await websocket.send(json.dumps(message))
-                
+
                 # Show processing indicator
                 with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
                     console=self.console,
-                    transient=True
+                    transient=True,
                 ) as progress:
                     task = progress.add_task("Processing your request...", total=None)
-                    
+
                     # Listen for responses
                     async for response_str in websocket:
                         try:
                             response = json.loads(response_str)
                             msg_type = response.get("type")
-                            
+
                             if msg_type == "processing_step":
                                 step_msg = response.get("message", "")
                                 progress.update(task, description=step_msg)
-                                
+
                             # Debug prompt handling removed - using debug_comparison instead
 
                             elif msg_type == "debug_comparison" and self.debug:
                                 progress.stop()
-                                await self.display_debug_comparison(response.get("data", {}), user_input)
+                                await self.display_debug_comparison(
+                                    response.get("data", {}), user_input
+                                )
                                 progress = Progress(
                                     SpinnerColumn(),
-                                    TextColumn("[progress.description]{task.description}"),
+                                    TextColumn(
+                                        "[progress.description]{task.description}"
+                                    ),
                                     console=self.console,
-                                    transient=True
+                                    transient=True,
                                 )
-                                task = progress.add_task("Generating final response...", total=None)
-                                
+                                task = progress.add_task(
+                                    "Generating final response...", total=None
+                                )
+
                             elif msg_type == "chat_response":
                                 progress.stop()
                                 # In debug mode, responses are shown in debug_comparison, so skip normal display
                                 if not self.debug:
-                                    await self.display_response(response.get("data", {}), user_input.get("question"))
+                                    await self.display_response(
+                                        response.get("data", {}),
+                                        user_input.get("question"),
+                                    )
                                 else:
                                     # Store response data for potential use, but display is handled by debug_comparison
                                     self._last_response_data = response.get("data", {})
-                                    self._last_user_question = user_input.get("question")
+                                    self._last_user_question = user_input.get(
+                                        "question"
+                                    )
                                 break
-                                
+
                             elif msg_type == "error":
                                 progress.stop()
                                 error_msg = response.get("message", "Unknown error")
                                 self.console.print(f"❌ Error: {error_msg}", style="red")
                                 break
-                                
+
                         except json.JSONDecodeError:
                             continue
-                            
+
         except Exception as e:
             self.console.print(f"❌ WebSocket error: {e}", style="red")
             self.console.print("🔄 Falling back to HTTP API...", style="yellow")
@@ -421,18 +515,21 @@ class TerminalChat:
     async def send_quick_message(self, quick_input: Dict[str, Any]) -> None:
         """Send quick message via HTTP API for one-liner response"""
         try:
+            headers = {}
+            if self.token:
+                headers["Authorization"] = f"Bearer {self.token}"
+
             async with httpx.AsyncClient(timeout=30.0) as client:
                 with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
                     console=self.console,
-                    transient=True
+                    transient=True,
                 ) as progress:
-                    task = progress.add_task("⚡ Getting quick answer...", total=None)
+                    progress.add_task("⚡ Getting quick answer...", total=None)
 
                     response = await client.post(
-                        f"{self.api_base}/api/v1/chat/quick",
-                        json=quick_input
+                        f"{self.api_base}/api/v1/chat/quick", json=quick_input, headers=headers
                     )
 
                     progress.stop()
@@ -441,32 +538,41 @@ class TerminalChat:
                         data = response.json()
 
                         # Display quick response
-                        self.console.print(f"\n⚡ [bold green]Quick Answer:[/bold green]", style="green")
-                        self.console.print(Panel(
-                            data.get("content", "No response"),
-                            title=f"🤖 {data.get('model_used', 'unknown')} ({data.get('cost', 0):.4f} USD)",
-                            title_align="left",
-                            border_style="green"
-                        ))
+                        self.console.print(
+                            "\n⚡ [bold green]Quick Answer:[/bold green]", style="green"
+                        )
+                        self.console.print(
+                            Panel(
+                                data.get("content", "No response"),
+                                title=f"🤖 {data.get('model_used', 'unknown')} ({data.get('cost', 0):.4f} USD)",
+                                title_align="left",
+                                border_style="green",
+                            )
+                        )
 
                         # Update conversation history
-                        self.message_history.append({
-                            "role": "user",
-                            "content": quick_input["question"]
-                        })
-                        self.message_history.append({
-                            "role": "assistant",
-                            "content": data.get("content", ""),
-                            "model": data.get("model_used"),
-                            "provider": data.get("provider")
-                        })
+                        self.message_history.append(
+                            {"role": "user", "content": quick_input["question"]}
+                        )
+                        self.message_history.append(
+                            {
+                                "role": "assistant",
+                                "content": data.get("content", ""),
+                                "model": data.get("model_used"),
+                                "provider": data.get("provider"),
+                            }
+                        )
 
                     else:
-                        self.console.print(f"❌ HTTP error: {response.status_code}", style="red")
+                        self.console.print(
+                            f"❌ HTTP error: {response.status_code}", style="red"
+                        )
                         try:
                             error_data = response.json()
-                            self.console.print(f"Details: {error_data.get('detail')}", style="dim red")
-                        except:
+                            self.console.print(
+                                f"Details: {error_data.get('detail')}", style="dim red"
+                            )
+                        except json.JSONDecodeError:
                             pass
 
         except Exception as e:
@@ -475,31 +581,40 @@ class TerminalChat:
     async def send_enhanced_http_message(self, user_input: Dict[str, Any]) -> None:
         """Send enhanced message via HTTP API"""
         try:
+            headers = {}
+            if self.token:
+                headers["Authorization"] = f"Bearer {self.token}"
+
             async with httpx.AsyncClient(timeout=60.0) as client:
                 with Progress(
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
                     console=self.console,
-                    transient=True
+                    transient=True,
                 ) as progress:
-                    task = progress.add_task("🚀 Generating enhanced response...", total=None)
+                    progress.add_task("🚀 Generating enhanced response...", total=None)
 
                     response = await client.post(
-                        f"{self.api_base}/api/v1/chat/message",
-                        json=user_input
+                        f"{self.api_base}/api/v1/chat/message", json=user_input, headers=headers
                     )
 
                     progress.stop()
 
                     if response.status_code == 200:
                         data = response.json()
-                        await self.display_enhanced_response(data, user_input.get("question"))
+                        await self.display_enhanced_response(
+                            data, user_input.get("question")
+                        )
                     else:
-                        self.console.print(f"❌ HTTP error: {response.status_code}", style="red")
+                        self.console.print(
+                            f"❌ HTTP error: {response.status_code}", style="red"
+                        )
                         try:
                             error_data = response.json()
-                            self.console.print(f"Details: {error_data.get('detail')}", style="dim red")
-                        except:
+                            self.console.print(
+                                f"Details: {error_data.get('detail')}", style="dim red"
+                            )
+                        except json.JSONDecodeError:
                             pass
 
         except Exception as e:
@@ -513,15 +628,14 @@ class TerminalChat:
                     SpinnerColumn(),
                     TextColumn("[progress.description]{task.description}"),
                     console=self.console,
-                    transient=True
+                    transient=True,
                 ) as progress:
-                    task = progress.add_task("Sending request to backend...", total=None)
+                    progress.add_task("Sending request to backend...", total=None)
 
                     # Note: This endpoint might not exist, this is a placeholder
                     # The actual endpoint would need to be implemented in the backend
                     response = await client.post(
-                        f"{self.api_base}/api/v1/chat/process",
-                        json=user_input
+                        f"{self.api_base}/api/v1/chat/message", json=user_input
                     )
 
                     progress.stop()
@@ -529,15 +643,23 @@ class TerminalChat:
                     if response.status_code == 200:
                         data = response.json()
                         if data.get("success"):
-                            await self.display_response(data.get("data", {}), user_input.get("question"))
+                            await self.display_response(
+                                data.get("data", {}), user_input.get("question")
+                            )
                         else:
-                            self.console.print(f"❌ Request failed: {data.get('error')}", style="red")
+                            self.console.print(
+                                f"❌ Request failed: {data.get('error')}", style="red"
+                            )
                     else:
-                        self.console.print(f"❌ HTTP error: {response.status_code}", style="red")
+                        self.console.print(
+                            f"❌ HTTP error: {response.status_code}", style="red"
+                        )
                         try:
                             error_data = response.json()
-                            self.console.print(f"Details: {error_data.get('detail')}", style="dim red")
-                        except:
+                            self.console.print(
+                                f"Details: {error_data.get('detail')}", style="dim red"
+                            )
+                        except json.JSONDecodeError:
                             pass
 
         except Exception as e:
@@ -545,17 +667,23 @@ class TerminalChat:
 
     # display_debug_prompt method removed - now using display_debug_comparison for better evaluation
 
-    async def display_debug_comparison(self, comparison_data: Dict[str, Any], original_input: Dict[str, Any] = None) -> None:
+    async def display_debug_comparison(
+        self, comparison_data: Dict[str, Any], original_input: Dict[str, Any] = None
+    ) -> None:
         """Display enhanced vs RAW response comparison in debug mode"""
         enhanced = comparison_data.get("enhanced_response", {})
         # Try both "raw_response" (new) and "basic_response" (legacy) for backwards compatibility
-        raw = comparison_data.get("raw_response", comparison_data.get("basic_response", {}))
+        raw = comparison_data.get(
+            "raw_response", comparison_data.get("basic_response", {})
+        )
         model = comparison_data.get("model", "unknown")
         provider = comparison_data.get("provider", "unknown")
         user_question = comparison_data.get("user_question", "")
 
         self.console.print()
-        self.console.print("[bold cyan]🔬 DEBUG MODE: Enhanced vs RAW Response Comparison[/bold cyan]")
+        self.console.print(
+            "[bold cyan]🔬 DEBUG MODE: Enhanced vs RAW Response Comparison[/bold cyan]"
+        )
         self.console.print()
 
         # Show user question
@@ -565,7 +693,7 @@ class TerminalChat:
                 title="❓ User Question",
                 title_align="left",
                 border_style="blue",
-                padding=(1, 2)
+                padding=(1, 2),
             )
             self.console.print(question_panel)
 
@@ -578,18 +706,32 @@ class TerminalChat:
         reasoning = enhanced_response.get("reasoning", "")
 
         # Determine provider style and emoji
-        provider_emoji = "🏠" if provider == "lm_studio" else "☁️" if provider == "openrouter" else "🤖"
-        provider_style = "bold blue" if provider == "lm_studio" else "bold magenta" if provider == "openrouter" else "bold cyan"
+        provider_emoji = (
+            "🏠"
+            if provider == "lm_studio"
+            else "☁️"
+            if provider == "openrouter"
+            else "🤖"
+        )
+        provider_style = (
+            "bold blue"
+            if provider == "lm_studio"
+            else "bold magenta"
+            if provider == "openrouter"
+            else "bold cyan"
+        )
 
         # Show model selection
         model_announcement = f"{provider_emoji} [bold cyan]MODEL SELECTED BY ALGORITHM:[/bold cyan] [{provider_style}]{provider.upper()}[/{provider_style}] → [bold yellow]{model}[/bold yellow]"
-        self.console.print(Panel(
-            model_announcement,
-            title="🎯 Smart Model Selection",
-            title_align="left",
-            border_style=provider_style,
-            padding=(0, 1)
-        ))
+        self.console.print(
+            Panel(
+                model_announcement,
+                title="🎯 Smart Model Selection",
+                title_align="left",
+                border_style=provider_style,
+                padding=(0, 1),
+            )
+        )
 
         # Show reasoning if available
         if reasoning:
@@ -598,7 +740,7 @@ class TerminalChat:
                 title="🧠 Why This Model?",
                 title_align="left",
                 border_style="dim",
-                padding=(0, 1)
+                padding=(0, 1),
             )
             self.console.print(reasoning_panel)
 
@@ -616,7 +758,7 @@ class TerminalChat:
             title="📊 Performance Metrics",
             title_align="left",
             border_style="dim",
-            padding=(0, 1)
+            padding=(0, 1),
         )
         self.console.print(metadata_panel)
         self.console.print()
@@ -625,27 +767,27 @@ class TerminalChat:
         comparison_table = Table(
             title=f"📊 Response Comparison using {model}",
             show_header=True,
-            header_style="bold magenta"
+            header_style="bold magenta",
         )
         comparison_table.add_column("Metric", style="cyan", width=20)
         comparison_table.add_column("Enhanced (Our System)", style="green", width=40)
-        comparison_table.add_column("Raw Model (No System Prompt)", style="yellow", width=40)
+        comparison_table.add_column(
+            "Raw Model (No System Prompt)", style="yellow", width=40
+        )
 
         # Add metrics
         comparison_table.add_row(
             "Tokens Used",
             str(enhanced.get("tokens_used", 0)),
-            str(raw.get("tokens_used", 0))
+            str(raw.get("tokens_used", 0)),
         )
         comparison_table.add_row(
-            "Cost",
-            f"${enhanced.get('cost', 0):.6f}",
-            f"${raw.get('cost', 0):.6f}"
+            "Cost", f"${enhanced.get('cost', 0):.6f}", f"${raw.get('cost', 0):.6f}"
         )
         comparison_table.add_row(
             "Response Time",
             f"{enhanced.get('response_time_ms', 0)}ms",
-            f"{raw.get('response_time_ms', 0)}ms"
+            f"{raw.get('response_time_ms', 0)}ms",
         )
 
         self.console.print(comparison_table)
@@ -655,12 +797,12 @@ class TerminalChat:
         raw_prompt = raw.get("system_prompt", None)
 
         prompts_table = Table(
-            title="🎯 System Prompts Used",
-            show_header=True,
-            header_style="bold cyan"
+            title="🎯 System Prompts Used", show_header=True, header_style="bold cyan"
         )
         prompts_table.add_column("Enhanced System Prompt", style="green", width=50)
-        prompts_table.add_column("Raw Model Input (No System Prompt)", style="yellow", width=50)
+        prompts_table.add_column(
+            "Raw Model Input (No System Prompt)", style="yellow", width=50
+        )
 
         # Handle no system prompt case but show user message if available
         if raw_prompt is None or raw_prompt == "":
@@ -668,7 +810,10 @@ class TerminalChat:
             if raw_user_msg and len(raw_user_msg) > 100:
                 raw_msg_preview = raw_user_msg[:100] + "..."
             else:
-                raw_msg_preview = raw_user_msg or "[dim italic]NO SYSTEM PROMPT - Only raw user question[/dim italic]"
+                raw_msg_preview = (
+                    raw_user_msg
+                    or "[dim italic]NO SYSTEM PROMPT - Only raw user question[/dim italic]"
+                )
             raw_prompt_display = f"[dim italic]NO SYSTEM PROMPT[/dim italic]\n\nUser message sent:\n{raw_msg_preview}"
         else:
             raw_prompt_display = raw_prompt
@@ -684,7 +829,7 @@ class TerminalChat:
             title="✨ Enhanced Response (Our System)",
             title_align="left",
             border_style="green",
-            padding=(1, 2)
+            padding=(1, 2),
         )
         self.console.print(enhanced_response_panel)
 
@@ -695,7 +840,7 @@ class TerminalChat:
             title="🤖 Raw Model Response (No System Prompt)",
             title_align="left",
             border_style="yellow",
-            padding=(1, 2)
+            padding=(1, 2),
         )
         self.console.print(raw_response_panel)
 
@@ -705,9 +850,13 @@ class TerminalChat:
 
         analysis_text = []
         if token_diff > 0:
-            analysis_text.append(f"Enhanced used {token_diff} more tokens (+{(token_diff/raw.get('tokens_used', 1)*100):.1f}%)")
+            analysis_text.append(
+                f"Enhanced used {token_diff} more tokens (+{(token_diff/raw.get('tokens_used', 1)*100):.1f}%)"
+            )
         elif token_diff < 0:
-            analysis_text.append(f"Enhanced used {abs(token_diff)} fewer tokens ({(abs(token_diff)/raw.get('tokens_used', 1)*100):.1f}% less)")
+            analysis_text.append(
+                f"Enhanced used {abs(token_diff)} fewer tokens ({(abs(token_diff)/raw.get('tokens_used', 1)*100):.1f}% less)"
+            )
         else:
             analysis_text.append("Both responses used same number of tokens")
 
@@ -723,31 +872,39 @@ class TerminalChat:
             title="📈 Quick Analysis",
             title_align="left",
             border_style="cyan",
-            padding=(1, 2)
+            padding=(1, 2),
         )
         self.console.print(analysis_panel)
 
-        self.console.print("[dim]💡 Note: RAW response receives ONLY the user's question (no system prompt, no history). Enhanced response uses intelligent system prompting.[/dim]")
-        self.console.print("[dim]📋 The enhanced response (shown above) will be used as the final answer.[/dim]")
+        self.console.print(
+            "[dim]💡 Note: RAW response receives ONLY the user's question (no system prompt, no history). Enhanced response uses intelligent system prompting.[/dim]"
+        )
+        self.console.print(
+            "[dim]📋 The enhanced response (shown above) will be used as the final answer.[/dim]"
+        )
 
         # Store conversation history (same logic as display_response)
         if user_question:
-            self.message_history.append({
-                "role": "user",
-                "content": user_question,
-                "timestamp": datetime.now().isoformat()
-            })
+            self.message_history.append(
+                {
+                    "role": "user",
+                    "content": user_question,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # Store enhanced response in history
         enhanced_content = enhanced.get("content", "")
         if enhanced_content:
-            self.message_history.append({
-                "role": "assistant",
-                "content": enhanced_content,
-                "timestamp": datetime.now().isoformat(),
-                "model": model,
-                "provider": provider
-            })
+            self.message_history.append(
+                {
+                    "role": "assistant",
+                    "content": enhanced_content,
+                    "timestamp": datetime.now().isoformat(),
+                    "model": model,
+                    "provider": provider,
+                }
+            )
 
         # Store the chosen model and provider for this conversation (first time only)
         if not self.chosen_model and not self.chosen_provider:
@@ -756,7 +913,9 @@ class TerminalChat:
 
         self.console.print()
 
-    async def display_enhanced_response(self, response_data: Dict[str, Any], user_question: str = None) -> None:
+    async def display_enhanced_response(
+        self, response_data: Dict[str, Any], user_question: str = None
+    ) -> None:
         """Display enhanced AI response, optionally with RAW comparison in debug mode"""
         content = response_data.get("content", "")
         model_used = response_data.get("model_used", "unknown")
@@ -779,7 +938,7 @@ class TerminalChat:
                     "cost": cost,
                     "response_time_ms": response_time,
                     "system_prompt": system_prompt,
-                    "reasoning": reasoning
+                    "reasoning": reasoning,
                 },
                 "raw_response": {
                     "content": raw_response,
@@ -787,11 +946,11 @@ class TerminalChat:
                     "cost": 0,  # Not provided separately
                     "response_time_ms": 0,  # Not provided separately
                     "system_prompt": "",  # Always empty for RAW
-                    "user_message": user_question or ""
+                    "user_message": user_question or "",
                 },
                 "model": model_used,
                 "provider": provider,
-                "user_question": user_question or ""
+                "user_question": user_question or "",
             }
 
             # Display the comparison
@@ -802,29 +961,47 @@ class TerminalChat:
             self.console.print()
 
             # Determine provider style and emoji
-            provider_emoji = "🏠" if provider == "lm_studio" else "☁️" if provider == "openrouter" else "🤖"
-            provider_style = "bold blue" if provider == "lm_studio" else "bold magenta" if provider == "openrouter" else "bold cyan"
-            cost_style = "green" if cost == 0 else "yellow"
+            provider_emoji = (
+                "🏠"
+                if provider == "lm_studio"
+                else "☁️"
+                if provider == "openrouter"
+                else "🤖"
+            )
+            provider_style = (
+                "bold blue"
+                if provider == "lm_studio"
+                else "bold magenta"
+                if provider == "openrouter"
+                else "bold cyan"
+            )
 
             # Create enhanced response header
-            self.console.print(f"🚀 [bold green]Enhanced Response:[/bold green] {provider_emoji} [{provider_style}]{provider.upper()}[/{provider_style}] → [bold yellow]{model_used}[/bold yellow]", style="green")
+            self.console.print(
+                f"🚀 [bold green]Enhanced Response:[/bold green] {provider_emoji} [{provider_style}]{provider.upper()}[/{provider_style}] → [bold yellow]{model_used}[/bold yellow]",
+                style="green",
+            )
 
             # Display the enhanced content
-            self.console.print(Panel(
-                Markdown(content) if content.strip() else "No response content",
-                title=f"🤖 Enhanced Response (${cost:.4f} USD, {response_time}ms)",
-                title_align="left",
-                border_style="blue"
-            ))
+            self.console.print(
+                Panel(
+                    Markdown(content) if content.strip() else "No response content",
+                    title=f"🤖 Enhanced Response (${cost:.4f} USD, {response_time}ms)",
+                    title_align="left",
+                    border_style="blue",
+                )
+            )
 
             # Show reasoning for enhanced model selection
             if reasoning:
-                self.console.print(Panel(
-                    reasoning,
-                    title="🎯 Why this model was selected",
-                    title_align="left",
-                    border_style="yellow"
-                ))
+                self.console.print(
+                    Panel(
+                        reasoning,
+                        title="🎯 Why this model was selected",
+                        title_align="left",
+                        border_style="yellow",
+                    )
+                )
 
         # Add the enhanced response to conversation history (replacing the quick response)
         # Remove the last assistant message (quick response) and replace with enhanced
@@ -834,21 +1011,25 @@ class TerminalChat:
                 "content": content,
                 "timestamp": datetime.now().isoformat(),
                 "model": model_used,
-                "provider": provider
+                "provider": provider,
             }
         else:
             # Fallback: add enhanced response normally
-            self.message_history.append({
-                "role": "assistant",
-                "content": content,
-                "timestamp": datetime.now().isoformat(),
-                "model": model_used,
-                "provider": provider
-            })
+            self.message_history.append(
+                {
+                    "role": "assistant",
+                    "content": content,
+                    "timestamp": datetime.now().isoformat(),
+                    "model": model_used,
+                    "provider": provider,
+                }
+            )
 
         self.console.print()
 
-    async def display_response(self, response_data: Dict[str, Any], user_question: str = None) -> None:
+    async def display_response(
+        self, response_data: Dict[str, Any], user_question: str = None
+    ) -> None:
         """Display the AI response in a nice format"""
         content = response_data.get("content", "")
         model_used = response_data.get("model_used", "unknown")
@@ -856,23 +1037,37 @@ class TerminalChat:
         cost = response_data.get("cost", 0)
         response_time = response_data.get("response_time_ms", 0)
         reasoning = response_data.get("reasoning", "")
-        
+
         # Store the user message that led to this response
         if user_question:
-            self.message_history.append({
-                "role": "user",
-                "content": user_question,
-                "timestamp": datetime.now().isoformat()
-            })
-        
+            self.message_history.append(
+                {
+                    "role": "user",
+                    "content": user_question,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
         # Create prominent model/provider header
         self.console.print()
-        
+
         # Determine provider style and emoji
-        provider_emoji = "🏠" if provider == "lm_studio" else "☁️" if provider == "openrouter" else "🤖"
-        provider_style = "bold blue" if provider == "lm_studio" else "bold magenta" if provider == "openrouter" else "bold cyan"
+        provider_emoji = (
+            "🏠"
+            if provider == "lm_studio"
+            else "☁️"
+            if provider == "openrouter"
+            else "🤖"
+        )
+        provider_style = (
+            "bold blue"
+            if provider == "lm_studio"
+            else "bold magenta"
+            if provider == "openrouter"
+            else "bold cyan"
+        )
         cost_style = "green" if cost == 0 else "yellow"
-        
+
         # Create prominent model selection announcement
         if self.chosen_model == model_used and self.chosen_provider == provider:
             # Same model as chosen for this conversation
@@ -882,15 +1077,17 @@ class TerminalChat:
             # New model selection
             model_announcement = f"{provider_emoji} [bold cyan]MODEL SELECTED BY ALGORITHM:[/bold cyan] [{provider_style}]{provider.upper()}[/{provider_style}] → [bold yellow]{model_used}[/bold yellow]"
             panel_title = "🎯 Smart Model Selection"
-            
-        self.console.print(Panel(
-            model_announcement,
-            title=panel_title,
-            title_align="left",
-            border_style=provider_style,
-            padding=(0, 1)
-        ))
-        
+
+        self.console.print(
+            Panel(
+                model_announcement,
+                title=panel_title,
+                title_align="left",
+                border_style=provider_style,
+                padding=(0, 1),
+            )
+        )
+
         # Add model selection reasoning if available
         if reasoning:
             reasoning_panel = Panel(
@@ -898,23 +1095,23 @@ class TerminalChat:
                 title="🧠 Why This Model?",
                 title_align="left",
                 border_style="dim",
-                padding=(0, 1)
+                padding=(0, 1),
             )
             self.console.print(reasoning_panel)
-        
+
         # Response metadata table
         metadata_table = Table.grid(padding=1)
         metadata_table.add_column(style="dim", justify="right")
         metadata_table.add_column(style="bold")
-        
+
         # Emphasize cost with different styling
         cost_display = f"[{cost_style}]${cost:.6f}[/{cost_style}]"
         if cost == 0:
             cost_display += " [dim](FREE local inference)[/dim]"
-        
+
         metadata_table.add_row("💰 Cost:", cost_display)
         metadata_table.add_row("⏱️  Response Time:", f"{response_time}ms")
-        
+
         # Display response with enhanced title
         response_title = f"💬 Response from {model_used} via {provider.title()}"
         response_panel = Panel(
@@ -922,37 +1119,41 @@ class TerminalChat:
             title=response_title,
             title_align="left",
             border_style="green",
-            padding=(1, 2)
+            padding=(1, 2),
         )
-        
+
         self.console.print(metadata_table)
         self.console.print()
         self.console.print(response_panel)
-        
+
         # Store in session history
-        self.session_messages.append({
-            "timestamp": datetime.now().isoformat(),
-            "model": model_used,
-            "provider": provider,
-            "cost": cost,
-            "response_time": response_time,
-            "content_length": len(content)
-        })
-        
+        self.session_messages.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "model": model_used,
+                "provider": provider,
+                "cost": cost,
+                "response_time": response_time,
+                "content_length": len(content),
+            }
+        )
+
         # Store conversation history for memory
-        self.message_history.append({
-            "role": "assistant",
-            "content": content,
-            "timestamp": datetime.now().isoformat(),
-            "model": model_used,
-            "provider": provider
-        })
-        
+        self.message_history.append(
+            {
+                "role": "assistant",
+                "content": content,
+                "timestamp": datetime.now().isoformat(),
+                "model": model_used,
+                "provider": provider,
+            }
+        )
+
         # Store the chosen model and provider for this conversation (first time only)
         if not self.chosen_model and not self.chosen_provider:
             self.chosen_model = model_used
             self.chosen_provider = provider
-        
+
         # Ask for rating
         await self.collect_rating(response_data.get("message_id"))
 
@@ -960,26 +1161,57 @@ class TerminalChat:
         """Collect user rating for the response"""
         if not message_id:
             return
-            
+
         try:
             rating = Prompt.ask(
                 "\n⭐ [bold]Rate this response[/bold] (1-5, or press Enter to skip)",
                 default="",
-                console=self.console
+                console=self.console,
             )
-            
+
             if rating.strip():
                 rating_num = int(rating)
                 if 1 <= rating_num <= 5:
                     feedback = Prompt.ask(
                         "💬 [dim]Optional feedback[/dim]",
                         default="",
-                        console=self.console
+                        console=self.console,
                     )
-                    
-                    # Send rating (placeholder - would need actual endpoint)
-                    self.console.print(f"✅ Rating submitted: {rating_num}/5", style="green")
-                    
+
+                    try:
+                        headers = {}
+                        if self.token:
+                            headers["Authorization"] = f"Bearer {self.token}"
+
+                        async with httpx.AsyncClient(timeout=10.0) as client:
+                            response = await client.post(
+                                f"{self.api_base}/api/v1/evaluations/rate",
+                                json={
+                                    "message_id": message_id,
+                                    "rating": rating_num,
+                                    "feedback": feedback if feedback.strip() else None,
+                                },
+                                headers=headers,
+                            )
+                            response.raise_for_status()
+                            self.console.print(
+                                f"✅ Rating submitted: {rating_num}/5", style="green"
+                            )
+                    except httpx.RequestError as e:
+                        self.console.print(f"❌ Request failed: {e}", style="red")
+                    except httpx.HTTPStatusError as e:
+                        self.console.print(
+                            f"❌ HTTP error submitting rating: {e.response.status_code}",
+                            style="red",
+                        )
+                        try:
+                            error_data = e.response.json()
+                            self.console.print(
+                                f"Details: {error_data.get('detail')}", style="dim red"
+                            )
+                        except json.JSONDecodeError:
+                            pass
+
         except (ValueError, KeyboardInterrupt):
             pass
 
@@ -1033,7 +1265,7 @@ class TerminalChat:
 • Try different themes to see how responses change
 • The system automatically chooses the best model for your query
         """
-        
+
         self.console.print(Panel(help_text, title="📖 Help", border_style="blue"))
 
     def display_session_stats(self):
@@ -1041,44 +1273,59 @@ class TerminalChat:
         if not self.session_messages:
             self.console.print("📊 No messages in this session yet.", style="dim")
             return
-            
+
         total_messages = len(self.session_messages)
         total_cost = sum(msg["cost"] for msg in self.session_messages)
-        avg_response_time = sum(msg["response_time"] for msg in self.session_messages) / total_messages
-        
+        avg_response_time = (
+            sum(msg["response_time"] for msg in self.session_messages) / total_messages
+        )
+
         providers_used = {}
         models_used = {}
-        
+
         for msg in self.session_messages:
             provider = msg["provider"]
             model = msg["model"]
-            
+
             providers_used[provider] = providers_used.get(provider, 0) + 1
             models_used[model] = models_used.get(model, 0) + 1
-        
+
         stats_table = Table(title="📊 Session Statistics", show_header=True)
         stats_table.add_column("Metric", style="cyan")
         stats_table.add_column("Value", style="bold")
-        
+
         stats_table.add_row("Total Messages", str(total_messages))
         stats_table.add_row("Total Cost", f"${total_cost:.6f}")
         stats_table.add_row("Avg Response Time", f"{avg_response_time:.0f}ms")
-        stats_table.add_row("Most Used Provider", max(providers_used.items(), key=lambda x: x[1])[0] if providers_used else "None")
-        stats_table.add_row("Most Used Model", max(models_used.items(), key=lambda x: x[1])[0] if models_used else "None")
-        
+        stats_table.add_row(
+            "Most Used Provider",
+            max(providers_used.items(), key=lambda x: x[1])[0]
+            if providers_used
+            else "None",
+        )
+        stats_table.add_row(
+            "Most Used Model",
+            max(models_used.items(), key=lambda x: x[1])[0] if models_used else "None",
+        )
+
         self.console.print(stats_table)
 
     async def run(self):
         """Main chat loop"""
         self.display_banner()
-        
+
+        # Login to Supabase
+        await self.login()
+
         # Check backend status
         if not await self.check_backend_status():
             return
-        
+
         # Show help
-        self.console.print("💡 Type [bold]/help[/bold] for commands, or start chatting!", style="dim")
-        
+        self.console.print(
+            "💡 Type [bold]/help[/bold] for commands, or start chatting!", style="dim"
+        )
+
         while True:
             try:
                 # Display prompt with context info for continuing conversations
@@ -1087,46 +1334,48 @@ class TerminalChat:
                     prompt_text = f"\n💭 [bold cyan]Continue conversation[/bold cyan] [dim]({theme_display})[/dim]"
                 else:
                     prompt_text = "\n💭 [bold cyan]Your question[/bold cyan]"
-                
+
                 raw_input = Prompt.ask(prompt_text, console=self.console).strip()
-                
+
                 if not raw_input:
                     continue
-                
+
                 # Handle special commands
-                if raw_input.lower() in ['/quit', '/exit', '/q']:
+                if raw_input.lower() in ["/quit", "/exit", "/q"]:
                     self.console.print("👋 Goodbye!", style="bold blue")
                     break
-                elif raw_input.lower() == '/help':
+                elif raw_input.lower() == "/help":
                     self.display_help()
                     continue
-                elif raw_input.lower() == '/status':
+                elif raw_input.lower() == "/status":
                     await self.check_backend_status()
                     continue
-                elif raw_input.lower() == '/stats':
+                elif raw_input.lower() == "/stats":
                     self.display_session_stats()
                     continue
-                elif raw_input.lower() == '/new':
+                elif raw_input.lower() == "/new":
                     self.start_new_chat()
                     continue
-                elif raw_input.lower() == '/clear':
-                    os.system('clear' if os.name == 'posix' else 'cls')
+                elif raw_input.lower() == "/clear":
+                    os.system("clear" if os.name == "posix" else "cls")
                     self.display_banner()
                     continue
-                
+
                 # Handle regular chat
-                if raw_input.startswith('/'):
+                if raw_input.startswith("/"):
                     self.console.print(f"❌ Unknown command: {raw_input}", style="red")
-                    self.console.print("Type [bold]/help[/bold] for available commands.", style="dim")
+                    self.console.print(
+                        "Type [bold]/help[/bold] for available commands.", style="dim"
+                    )
                     continue
-                
+
                 # NEW TWO-TIER SYSTEM: Quick answer first, then option for enhanced
 
                 # Step 1: Send quick request with conversation history
                 quick_input = {
                     "question": raw_input,
                     "conversation_id": self.conversation_id,
-                    "message_history": self.message_history
+                    "message_history": self.message_history,
                 }
 
                 # Force use of the same model for this conversation if already chosen
@@ -1142,7 +1391,7 @@ class TerminalChat:
                     wants_enhanced = Confirm.ask(
                         "\n🎯 [bold yellow]Would you like a more detailed, tailored response?[/bold yellow]",
                         console=self.console,
-                        default=False
+                        default=False,
                     )
 
                     if wants_enhanced:
@@ -1151,7 +1400,10 @@ class TerminalChat:
                         if user_input:
                             # Include the updated message history (now has the quick Q&A)
                             user_input["message_history"] = self.message_history
-                            self.console.print("\n🚀 [bold green]Generating enhanced response...[/bold green]", style="green")
+                            self.console.print(
+                                "\n🚀 [bold green]Generating enhanced response...[/bold green]",
+                                style="green",
+                            )
                             if self.use_websocket:
                                 await self.send_websocket_message(user_input)
                             else:
@@ -1165,7 +1417,7 @@ class TerminalChat:
 
                 # Mark first message as sent
                 self.first_message_sent = True
-                    
+
             except KeyboardInterrupt:
                 self.console.print("\n👋 Chat interrupted. Goodbye!", style="bold blue")
                 break
@@ -1177,22 +1429,42 @@ class TerminalChat:
 async def main():
     """Main entry point"""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="PromptYour.AI Terminal Chat")
-    parser.add_argument("--api", default="http://localhost:8000", help="Backend API URL")
-    parser.add_argument("--http-only", action="store_true", help="Use HTTP only (no WebSocket)")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode to show enhanced vs raw model comparison")
-    parser.add_argument("--quick", action="store_true", help="Quick mode: skip theme and context questions")
-    
+    parser.add_argument(
+        "--api", default="http://localhost:8000", help="Backend API URL"
+    )
+    parser.add_argument(
+        "--supabase-url", default=os.environ.get("SUPABASE_URL"), help="Supabase URL"
+    )
+    parser.add_argument(
+        "--supabase-key", default=os.environ.get("SUPABASE_ANON_KEY"), help="Supabase anon key"
+    )
+    parser.add_argument(
+        "--http-only", action="store_true", help="Use HTTP only (no WebSocket)"
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode to show enhanced vs raw model comparison",
+    )
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Quick mode: skip theme and context questions",
+    )
+
     args = parser.parse_args()
-    
+
     chat = TerminalChat(
         api_base=args.api,
+        supabase_url=args.supabase_url,
+        supabase_key=args.supabase_key,
         use_websocket=not args.http_only,
         debug=args.debug,
-        quick_mode=args.quick
+        quick_mode=args.quick,
     )
-    
+
     await chat.run()
 
 

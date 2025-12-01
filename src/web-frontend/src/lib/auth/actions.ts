@@ -5,6 +5,50 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 /**
+ * Sign in with email and password
+ */
+export async function signIn(email: string, password: string, locale: string = 'en') {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) {
+    console.error('Error signing in:', error)
+    return { error: error.message }
+  }
+
+  revalidatePath('/', 'layout')
+  redirect(`/${locale}`)
+}
+
+/**
+ * Sign up with email and password
+ */
+export async function signUp(email: string, password: string, name?: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name: name || '',
+      },
+    },
+  })
+
+  if (error) {
+    console.error('Error signing up:', error)
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+/**
  * Sign out the current user
  */
 export async function signOut(locale: string = 'en') {

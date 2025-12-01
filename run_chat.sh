@@ -3,16 +3,15 @@
 
 echo "🚀 Setting up Terminal Chat for PromptYour.AI..."
 
-# Check if required packages are installed
-python3 -c "import httpx, websockets, rich" 2>/dev/null
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install dependencies from requirements.txt
+uv pip install -r requirements.txt
 if [ $? -ne 0 ]; then
-    echo "📦 Installing required packages..."
-    pip install httpx websockets rich
-    if [ $? -ne 0 ]; then
-        echo "❌ Failed to install packages. Please run manually:"
-        echo "pip install httpx websockets rich"
-        exit 1
-    fi
+    echo "❌ Failed to install packages. Please run manually:"
+    echo "uv pip install -r requirements.txt"
+    exit 1
 fi
 
 echo "✅ Dependencies ready!"

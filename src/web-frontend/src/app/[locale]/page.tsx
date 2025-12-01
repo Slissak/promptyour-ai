@@ -55,12 +55,7 @@ export default async function HomePage({
             >
               {t('nav.chat')}
             </Link>
-            <Link
-              href={`/${locale}/debug`}
-              className="border border-primary-500 text-primary-500 hover:bg-primary-50 px-8 py-3 rounded-lg font-medium transition-colors"
-            >
-              {t('common.debug_mode')}
-            </Link>
+
           </div>
         </div>
 

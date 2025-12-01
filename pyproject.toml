@@ -85,6 +85,8 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short --strict-markers"
+asyncio_mode = "auto"
+pythonpath = ["src"]
 
 [tool.black]
 line-length = 88
