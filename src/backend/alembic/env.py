@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load .env file from the project root
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 import asyncio
 from logging.config import fileConfig
@@ -19,7 +19,9 @@ from alembic import context
 # Import your models' Base
 from backend.app.db.base_class import Base
 # from app.core.config import settings # Not directly used for URL in Alembic
-import app.db.models  # Import models to ensure they are registered with Base.metadata
+import backend.app.db.models  # Import models to ensure they are registered with Base.metadata
+import backend.app.models.user  # Import User model explicitly
+import shared_python.db.models.usage  # Import UserUsage model
 
 # This is the Alembic Config object
 config = context.config

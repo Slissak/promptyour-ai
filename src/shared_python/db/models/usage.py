@@ -1,7 +1,8 @@
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, JSON, Float, Boolean, UUID
+from sqlalchemy import Column, String, DateTime, JSON, Float, Boolean, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from backend.app.db.base_class import Base
@@ -12,7 +13,7 @@ class UserUsage(Base):
     __tablename__ = "user_usage"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
 
     # Daily tracking
     daily_cost = Column(Float, default=0.0, nullable=False)

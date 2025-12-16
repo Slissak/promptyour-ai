@@ -62,16 +62,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegisterSuccess, 
             <p className="text-sm font-medium text-red-800">{error}</p>
           </div>
         )}
-        {success && (
-            <div className="rounded-md bg-green-50 p-4">
-                <h3 className="text-sm font-medium text-green-800 mb-2">
-                ✅ Account created successfully!
-                </h3>
-                <p className="text-sm text-green-700">
-                📧 Please check your email inbox for a confirmation link.
-                </p>
-            </div>
-        )}
 
         <div className="rounded-md shadow-sm space-y-3">
             <div>
@@ -141,7 +131,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegisterSuccess, 
             disabled={isLoading || success}
             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating account...' : success ? 'Account created!' : 'Create account'}
+            {isLoading ? 'Creating account...' : 'Create account'}
           </button>
         </div>
       </form>

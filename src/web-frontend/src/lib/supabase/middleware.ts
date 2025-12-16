@@ -1,13 +1,11 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { type NextRequest, NextResponse } from 'next/server'
 
-/**
- * Create a Supabase client for use in Middleware
- * This is specifically designed for session refresh in middleware
- */
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
+export const updateSession = async (request: NextRequest) => {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
   })
 
   const supabase = createServerClient(
@@ -19,15 +17,17 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
@@ -41,41 +41,16 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes - redirect to login if not authenticated
+  // protected routes
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
     !request.nextUrl.pathname.startsWith('/auth')
   ) {
-    // If on the home page, allow access (don't redirect to login)
-    if (request.nextUrl.pathname === '/' || request.nextUrl.pathname.match(/^\/[a-z]{2}$/)) {
-      return supabaseResponse
-    }
-
-    // Extract locale from pathname (e.g., /en/chat -> en)
-    const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(\/|$)/)
-    const locale = localeMatch ? localeMatch[1] : 'en'
-
-    // For other protected routes, redirect to login with locale
-    const url = request.nextUrl.clone()
-    url.pathname = `/${locale}/login`
-    return NextResponse.redirect(url)
-  }
-
-  // If user is logged in and tries to access login/signup, redirect to home
-  if (
-    user &&
-    (request.nextUrl.pathname.includes('/login') ||
-      request.nextUrl.pathname.includes('/signup'))
-  ) {
-    // Extract locale from pathname
-    const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(\/|$)/)
-    const locale = localeMatch ? localeMatch[1] : 'en'
-
-    const url = request.nextUrl.clone()
-    url.pathname = `/${locale}`
-    return NextResponse.redirect(url)
+    // no user, potentially respond by redirecting the user to the login page
+    // const url = request.nextUrl.clone()
+    // url.pathname = '/login'
+    // return NextResponse.redirect(url)
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
@@ -89,7 +64,7 @@ export async function updateSession(request: NextRequest) {
   // 4. Finally:
   //    return myNewResponse
   // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely.
+  // of sync and terminate the user's session prematurely!
 
-  return supabaseResponse
+  return response
 }

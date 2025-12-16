@@ -10,8 +10,9 @@ import { ChatMessageDisplay } from './ChatMessageDisplay';
 import { ComparisonView } from './ComparisonView';
 import { InlineEnhancedConfig } from './InlineEnhancedConfig';
 import { useUserMode } from '@/hooks/useUserMode';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { THEMES, AUDIENCES, RESPONSE_STYLES } from '@/config/generated-options';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@/shared/auth/types';
 
 interface TwoTierChatProps {
   locale: string;
@@ -42,6 +43,7 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
   const conversationManagerRef = useRef(getConversationManager());
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Track current mode in a ref to avoid closure issues in async functions
   const isAdvancedModeRef = useRef(isAdvancedMode);
@@ -51,29 +53,58 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     isAdvancedModeRef.current = isAdvancedMode;
   }, [isAdvancedMode]);
 
-  const supabase = useSupabaseClient();
-
   // Initialize API client and handle user session
   useEffect(() => {
+    const supabase = createClient();
+
     const initialize = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const loggedIn = !!session;
       setIsLoggedIn(loggedIn);
 
-      if (!loggedIn) {
+      if (loggedIn && session.user) {
+        setCurrentUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata.full_name || ''
+        });
+      } else {
         // For anonymous users, clear any previous conversations
         conversationManagerRef.current.clearAllConversations();
+        setCurrentUser(null);
       }
 
-      const token = session?.access_token;
       clientRef.current = new PromptYourAIClient({
         baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-        token: token,
+        token: session?.access_token || undefined,
       });
-      console.log('PromptYourAIClient initialized');
+      console.log('PromptYourAIClient initialized', { loggedIn, user: session?.user?.email });
     };
+
     initialize();
-  }, [supabase]);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const loggedIn = !!session;
+        setIsLoggedIn(loggedIn);
+        
+        if (loggedIn && session.user) {
+            setCurrentUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.user_metadata.full_name || ''
+            });
+        } else {
+            setCurrentUser(null);
+        }
+
+        clientRef.current = new PromptYourAIClient({
+            baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+            token: session?.access_token || undefined,
+        });
+    });
+
+    return () => subscription.unsubscribe();
+  }, []); 
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -325,6 +356,11 @@ export function TwoTierChat({ locale }: TwoTierChatProps) {
     <div className="flex flex-col h-full">
       {/* Messages Area */}
       <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isAdvancedMode ? 'bg-slate-50' : 'bg-white'}`}>
+        {currentUser && (
+          <div className="text-center text-gray-600 text-sm mb-4">
+            Logged in as: <strong>{currentUser.email}</strong>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 mt-16">
             <div className="text-6xl mb-4">💬</div>

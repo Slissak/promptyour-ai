@@ -1,8 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { LanguageSelector } from '@/components/layout/LanguageSelector';
-import { createClient } from '@/lib/supabase/server';
-import { UserMenu } from '@/components/auth/UserMenu';
+import { HomeHeader } from '@/components/layout/HomeHeader';
 
 export default async function HomePage({
   params
@@ -12,50 +10,52 @@ export default async function HomePage({
   const { locale } = await params;
   const t = await getTranslations();
 
-  // Get authenticated user
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t('chat.title')}
-          </h1>
-          <div className="flex items-center gap-4">
-            <LanguageSelector />
-            {user ? (
-              <UserMenu userEmail={user.email || ''} />
-            ) : (
-              <Link
-                href={`/${locale}/login`}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-              >
-                Sign in
-              </Link>
-            )}
-          </div>
-        </header>
+        <HomeHeader locale={locale} title={t('chat.title')} />
 
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            PromptYour.AI
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            {t('chat.subtitle')}
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {/* Apps Grid */}
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+          {/* PromptYour.AI Card */}
+          <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center mb-6 text-3xl">
+              💬
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              {t('apps.promptyourai.name')}
+            </h2>
+            <p className="text-gray-600 mb-8 flex-grow">
+              {t('apps.promptyourai.description')}
+            </p>
             <Link
               href={`/${locale}/chat`}
-              className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              {t('nav.chat')}
+              {t('apps.promptyourai.action')}
             </Link>
+          </div>
 
+          {/* VisGuiAI Card */}
+          <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow border border-gray-100 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 text-3xl">
+              🎨
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              {t('apps.visguiai.name')}
+            </h2>
+            <p className="text-gray-600 mb-8 flex-grow">
+              {t('apps.visguiai.description')}
+            </p>
+            <a
+              href="#" // Placeholder for external repo/app URL
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('apps.visguiai.action')}
+            </a>
           </div>
         </div>
 

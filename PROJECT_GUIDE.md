@@ -787,10 +787,12 @@ The system is fully functional across all platforms (Web, Mobile, Terminal) with
 
 ---
 
-## 📝 Recent Progress and Open Issues (Updated November 30, 2025)
+## 📝 Recent Progress and Open Issues (Updated Sunday, November 30, 2025)
 
 ### Progress:
 
+*   **Web App Toggle Button Fix**: Enabled on-the-fly mode switching during active chat sessions without resetting the conversation. This was achieved by refactoring `useUserMode` to use a React Context for global state synchronization and removing the automatic chat reset on mode change.
+*   **Web App Comparison View Enhanced**: Added token usage and cost comparison to the web app's debug comparison view, mirroring the terminal functionality. This involved updating backend schemas, service logic, and frontend components to pass and display these metrics.
 *   **Terminal Chat:** Fixed debug comparison view by implementing proper WebSocket debug callback in backend. Verified with test suite.
 *   **Web App:** Added "Debug - Comparison" button to chat interface to facilitate easy testing of RAW vs Enhanced mode.
 *   **Verification:** Confirmed that RAW mode sends only user question (no system prompt/history) while Enhanced uses full prompt engineering pipeline.
@@ -816,7 +818,7 @@ The system is fully functional across all platforms (Web, Mobile, Terminal) with
     *   **Cause:** Circular dependency between `env.py`, `database.py`, and `models.py` due to `Base` definition and imports.
     *   **Resolution:** Extracted `Base` class into `src/backend/app/db/base_class.py` and adjusted imports in `database.py`, `models.py`, and `env.py`. **(Resolved)**
 
-4.  **`psycopg2.OperationalError: could not translate host name "db.dvafcvbeqltbepwidjzb.supabase.co" to address: nodename nor servname provided, or not known` during Alembic autogenerate:**
+4.  **`psycopg2.OperationalError: could not translate host name "db.dvafcvbeqltbepwidjzb.supabase.co" to address: nodename nor servservname provided, or not known` during Alembic autogenerate:**
     *   **Cause:** The `DATABASE_URL` was pointing to a direct Supabase connection that was not IPv4 compatible, and the system's DNS could not resolve it. This was compounded by an environment variable overriding the `.env` file.
     *   **Resolution Attempted:**
         *   Identified the need to use the Supabase Session Pooler URI.
@@ -824,3 +826,83 @@ The system is fully functional across all platforms (Web, Mobile, Terminal) with
         *   Modified `src/backend/alembic/env.py` to explicitly load `.env` from the project root and configure Alembic's `sqlalchemy.url` directly from `os.environ`.
         *   Instructed user to `unset DATABASE_URL` in their terminal.
     *   **Current Status:** Debug prints in `env.py` *still* show the old direct connection hostname, indicating a persistent environment variable issue despite `unset` and `load_dotenv()`. User has confirmed `unset DATABASE_URL` returns empty and will restart the terminal. **(Pending User Action / Re-evaluation)**
+
+# ☁️ Deployment Plan: Azure + Supabase
+
+## 1. Architecture Overview
+
+**Strategy:** Secure, Scalable, Microservices-ready.
+*   **Frontend:** Azure Static Web Apps (Global CDN, auto-scaling, native Next.js support).
+*   **Middleware:** Supabase Edge Functions (Acts as the API Gateway, Auth Verifier, and Proxy).
+*   **Backend:** Azure App Service (Dockerized Python FastAPI).
+*   **Database:** Supabase PostgreSQL (Managed).
+
+```mermaid
+graph LR
+    User[User Device] -->|HTTPS| SWA[Azure Static Web App (Frontend)]
+    SWA -->|API Calls| Edge[Supabase Edge Function (Gateway)]
+    Edge -->|Auth Check & Proxy| AppService[Azure App Service (Backend)]
+    AppService -->|SQL via Pooler| DB[(Supabase PostgreSQL)]
+```
+
+## 2. Component Details
+
+### A. Backend (Azure App Service)
+*   **Resource:** Azure Web App for Containers (Linux).
+*   **Plan:** Premium V3 (P1v3) recommended for production (supports VNET integration if needed), or Basic (B1) for staging.
+*   **Deployment Method:** Docker Image via Azure Container Registry (ACR).
+*   **Security:**
+    *   Configure **Access Restrictions** to *only* allow traffic from Supabase Edge Function IPs (or implement a `x-gateway-secret` header check if IPs are dynamic).
+*   **Configuration:** Environment variables (`.env`) migrated to Azure App Service Configuration.
+
+### B. Frontend (Azure Static Web Apps)
+*   **Resource:** Azure Static Web Apps (Standard Plan).
+*   **Framework:** Next.js.
+*   **Build Pipeline:** GitHub Actions (Azure SWA standard workflow).
+*   **Environment:** `NEXT_PUBLIC_API_URL` will point to the **Supabase Edge Function URL**, keeping the Backend App Service URL hidden.
+
+### C. Middleware (Supabase Edge Functions)
+*   **Role:** API Gateway & Auth Proxy.
+*   **Function Name:** `api-gateway` (or `chat-proxy`).
+*   **Logic:**
+    1.  Intercept request from Frontend.
+    2.  Validate Supabase Auth Token (JWT).
+    3.  Inject a shared secret header (e.g., `X-Service-Token`).
+    4.  Forward request to Azure App Service (`https://your-backend.azurewebsites.net/...`).
+    5.  Stream response back to Frontend (Critical for chat tokens).
+
+### D. Database (Supabase)
+*   **Connection:** Backend connects via **Transaction Pooler** (port 6543) to support serverless/auto-scaling connections from the App Service.
+
+## 3. Execution Plan (Step-by-Step)
+
+### Phase 1: Backend Containerization
+1.  Create `src/backend/Dockerfile.prod` (Optimized multi-stage build, using `uv` for fast installs).
+2.  Create **Azure Container Registry (ACR)**.
+3.  Build and push the backend image: `docker push <acr-name>.azurecr.io/backend:latest`.
+
+### Phase 2: Azure Backend Infrastructure
+1.  Create **App Service Plan** (Linux).
+2.  Create **Web App for Containers**, pulling from ACR.
+3.  Set App Service **Environment Variables**:
+    *   `DATABASE_URL`: (Supabase Transaction Pooler Connection String).
+    *   `GATEWAY_SECRET`: (Random string to verify requests come from Edge Function).
+    *   LLM Keys: (`OPENAI_API_KEY`, etc.).
+
+### Phase 3: Supabase Edge Function (The Glue)
+1.  Initialize function: `supabase functions new chat-proxy`.
+2.  Implement TypeScript logic to proxy requests to the Azure App Service URL.
+3.  Deploy: `supabase functions deploy chat-proxy`.
+4.  Set Secrets: `supabase secrets set BACKEND_URL=... GATEWAY_SECRET=...`
+
+### Phase 4: Frontend Deployment
+1.  Create **Azure Static Web App** resource.
+2.  Link to GitHub Repo (Branch: `main` or `production`).
+3.  Configure Build Preset: `Next.js`.
+4.  Set Environment Variable in Azure Portal:
+    *   `NEXT_PUBLIC_API_URL`: `https://<project-ref>.supabase.co/functions/v1/chat-proxy`
+
+### Phase 5: Verification
+1.  **Connectivity:** Verify Frontend talks to Edge Function.
+2.  **Security:** Verify Backend rejects requests without the `GATEWAY_SECRET`.
+3.  **Functionality:** Verify "Debug - Comparison" mode works in the deployed environment.

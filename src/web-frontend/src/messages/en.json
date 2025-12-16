@@ -14,6 +14,18 @@
     "about": "About",
     "settings": "Settings"
   },
+  "apps": {
+    "promptyourai": {
+      "name": "PromptYour.AI",
+      "description": "Intelligent model routing and prompt enhancement",
+      "action": "Launch Chat"
+    },
+    "visguiai": {
+      "name": "VisGuiAI",
+      "description": "Visual GUI generation powered by AI",
+      "action": "Launch VisGuiAI"
+    }
+  },
   "chat": {
     "title": "PromptYour.AI Chat",
     "subtitle": "Enhanced AI responses through intelligent model routing",

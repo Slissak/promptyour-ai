@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { signOut } from '@/lib/auth/actions';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { authService } from '@/shared/auth/services/authService';
 
 interface UserMenuProps {
   userEmail: string;
@@ -19,7 +19,11 @@ export function UserMenu({ userEmail }: UserMenuProps) {
   const handleSignOut = async () => {
     setIsLoading(true);
     try {
-      await signOut(locale);
+      await authService.logout();
+      // Redirect to login anyway with locale
+      router.push(`/${locale}/login`);
+      // Force refresh to update auth state
+      router.refresh();
     } catch (error) {
       console.error('Error signing out:', error);
       // Redirect to login anyway with locale

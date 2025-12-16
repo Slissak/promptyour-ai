@@ -1,11 +1,7 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-/**
- * Create a Supabase client for use in Server Components, Server Actions, and Route Handlers
- * This client handles cookies for session management on the server side
- */
-export async function createClient() {
+export const createClient = async () => {
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -18,11 +14,11 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
+            })
+          } catch (error) {
+            // The `set` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
           }

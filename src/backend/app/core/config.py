@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
         default=30, description="Token expiry minutes"
     )
+    BACKEND_API_KEY: str = Field(..., description="Shared secret key between Edge Function and Backend")
 
     # Application
     API_HOST: str = Field(default="localhost", description="API host")

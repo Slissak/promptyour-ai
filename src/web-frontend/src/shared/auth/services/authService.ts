@@ -1,6 +1,6 @@
 
-import { createClient } from '@/lib/supabase/client';
 import { User, AuthResponse, LoginCredentials, RegistrationData } from '../types/index';
+import { createClient } from '@/lib/supabase/client';
 
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
@@ -38,7 +38,6 @@ export const authService = {
     });
 
     if (error) {
-      console.error('Supabase signup error:', error);
       throw new Error(error.message);
     }
 

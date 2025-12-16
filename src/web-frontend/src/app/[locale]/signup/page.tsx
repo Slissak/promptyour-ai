@@ -11,11 +11,8 @@ export default function SignupPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleRegisterSuccess = () => {
-    setIsSuccess(true);
-    // Optionally redirect after a delay
-    setTimeout(() => {
-        router.push(`/${locale}/login`);
-    }, 3000);
+    router.push(`/${locale}`);
+    router.refresh();
   };
 
   const handleShowLogin = () => {

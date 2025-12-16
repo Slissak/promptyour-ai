@@ -12,6 +12,7 @@ from typing import Optional, List
 from enum import Enum
 from pydantic import BaseModel, Field
 from datetime import datetime
+from uuid import UUID
 
 from backend.app.core.app_config_loader import get_config_loader
 

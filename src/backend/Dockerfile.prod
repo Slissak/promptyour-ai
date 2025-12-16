@@ -1,0 +1,56 @@
+# Phase 1: Builder
+FROM python:3.11-slim-bookworm as builder
+
+WORKDIR /build
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Create virtual environment
+ENV VIRTUAL_ENV=/app/.venv
+RUN uv venv $VIRTUAL_ENV
+
+# Activate virtual environment
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+# We use --no-root to install just dependencies first for caching
+RUN uv pip install --no-cache-dir -r pyproject.toml
+
+# Phase 2: Runner
+FROM python:3.11-slim-bookworm as runner
+
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy virtual environment
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy application code
+# We structure it so that 'src' is in PYTHONPATH
+COPY src/backend /app/src/backend
+COPY src/shared_python /app/src/shared_python
+
+# Set PYTHONPATH to include src so imports like "backend.app" and "shared_python" work
+ENV PYTHONPATH=/app/src
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

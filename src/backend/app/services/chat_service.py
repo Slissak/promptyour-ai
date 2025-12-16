@@ -5,6 +5,7 @@ Coordinates input processing, model selection, prompt generation, and LLM calls
 import uuid
 from fastapi import HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from backend.app.models.schemas import (
     UserInput,
@@ -27,6 +28,7 @@ from backend.app.core.logging import get_logger
 from shared_python.usage.usage_service import UsageService
 from backend.app.models.user import User
 from backend.app.db.database import get_db_session
+from backend.app.db.models import Conversation, Message
 
 logger = get_logger(__name__)
 
@@ -54,7 +56,7 @@ class ChatService:
         """Main flow: Process user request through complete pipeline"""
 
         if user_id != "anonymous_user":
-            user = await self.db.get(User, user_id)
+            user = await self.db.get(User, uuid.UUID(user_id))
             if not user or not await self.usage_service.check_limits(user):
                 raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Usage limit exceeded")
 
@@ -94,6 +96,54 @@ class ChatService:
 
             raw_llm_response = await self.process_raw_request(RawInput(question=user_input.question), user_id)
 
+            # Save to Database if user is authenticated
+            if user_id != "anonymous_user":
+                try:
+                    user_uuid = uuid.UUID(user_id)
+                    conversation_uuid = None
+                    
+                    if user_input.conversation_id:
+                        try:
+                            conversation_uuid = uuid.UUID(user_input.conversation_id)
+                            # Verify ownership
+                            result = await self.db.execute(select(Conversation).where(Conversation.id == conversation_uuid, Conversation.user_id == user_uuid))
+                            conversation = result.scalars().first()
+                            
+                            if not conversation:
+                                # If provided ID not found, create new
+                                conversation = Conversation(id=conversation_uuid, user_id=user_uuid, title=user_input.question[:50])
+                                self.db.add(conversation)
+                        except ValueError:
+                            # Invalid UUID provided
+                            pass
+                    
+                    if not conversation_uuid or (user_input.conversation_id and not conversation):
+                         # Double check if we already created it in previous block (conversation might be None if not found)
+                         if not user_input.conversation_id or (user_input.conversation_id and not conversation_uuid):
+                             conversation_uuid = uuid.uuid4()
+                             conversation = Conversation(id=conversation_uuid, user_id=user_uuid, title=user_input.question[:50])
+                             self.db.add(conversation)
+
+                    # Create Message
+                    # Ensure conversation_uuid is set correctly (either from input or new)
+                    if not conversation_uuid and conversation:
+                        conversation_uuid = conversation.id
+                    
+                    message = Message(
+                        conversation_id=conversation_uuid,
+                        user_message=user_input.question,
+                        system_prompt=system_prompt,
+                        model_used=llm_response.model,
+                        response=llm_response.content,
+                        tokens_used=llm_response.tokens_used,
+                        cost=llm_response.cost
+                    )
+                    self.db.add(message)
+                    await self.db.commit()
+                except Exception as e:
+                    logger.error("Failed to save conversation to DB", error=str(e))
+                    # Don't fail the request if saving fails, just log it
+            
             # Send debug comparison if in debug mode
             if debug_mode and debug_callback:
                 comparison_data = {
